@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Multiplayer Arena</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;overflow:hidden;font-family:Arial}
+canvas{display:block}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#050510,#1a1a3a);display:flex;align-items:center;justify-content:center;z-index:100}
+.box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:30px;width:min(400px,92vw);backdrop-filter:blur(10px)}
+.title{color:#f1c40f;font-size:26px;font-weight:bold;text-align:center;margin-bottom:5px}
+.sub{color:#aaa;font-size:12px;text-align:center;margin-bottom:20px}
+input{width:100%;padding:12px 15px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:white;font-size:15px;margin-bottom:10px;outline:none;box-sizing:border-box}
+input:focus{border-color:#f1c40f}
+input::placeholder{color:#555}
+.btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:bold;cursor:pointer;margin-bottom:8px}
+.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:white}
+.btn-blue{background:linear-gradient(135deg,#3498db,#2471a3);color:white}
+.btn-purple{background:linear-gradient(135deg,#9b59b6,#8e44ad);color:white}
+.btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:white}
+.or{color:#555;text-align:center;margin:6px 0;font-size:12px}
+.room-code{background:rgba(241,196,15,0.1);border:2px solid #f1c40f;border-radius:12px;padding:12px;text-align:center;margin-bottom:12px}
+.room-code-label{color:#aaa;font-size:11px;margin-bottom:4px}
+.room-code-value{color:#f1c40f;font-size:30px;font-weight:bold;letter-spacing:8px}
+.player-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:5px;color:white;font-size:13px}
+.pdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#chatBtn{position:fixed;right:10px;bottom:10px;background:#9b59b6;border:none;color:white;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:bold;display:none;z-index:50}
+#chat{position:fixed;right:10px;bottom:50px;width:210px;display:none;flex-direction:column}
+.chat-box{background:rgba(0,0,0,0.88);border:1px solid rgba(255,255,255,0.1);border-radius:10px;overflow:hidden}
+.chat-msgs{height:150px;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:3px}
+.chat-msg{font-size:11px;padding:2px 5px;border-radius:4px;color:#ddd;word-break:break-word}
+.chat-row{display:flex;border-top:1px solid rgba(255,255,255,0.08)}
+.chat-inp{flex:1;background:transparent;border:none;color:white;padding:7px;font-size:12px;outline:none}
+.chat-snd{background:#3498db;border:none;color:white;padding:7px 10px;cursor:pointer;font-size:11px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div id="ui">
+
+<!-- MENU -->
+<div class="box" id="menuBox">
+    <div class="title">⚔️ Multiplayer Arena</div>
+    <div class="sub">3 Lives • 3 Min Timer • Most Kills Wins!</div>
+    <input id="nameInp" placeholder="Your Name" maxlength="12">
+    <button class="btn btn-green" onclick="createRoom()">🏠 Create Room</button>
+    <div class="or">— or join friend —</div>
+    <input id="codeInp" placeholder="Room Code" maxlength="6" style="text-transform:uppercase;text-align:center;letter-spacing:5px;font-size:20px">
+    <button class="btn btn-blue" onclick="joinRoom()">🚪 Join Room</button>
+</div>
+
+<!-- LOBBY -->
+<div class="box" id="lobbyBox" style="display:none">
+    <div class="title">🏠 Lobby</div>
+    <div class="room-code">
+        <div class="room-code-label">Share this code with friends:</div>
+        <div class="room-code-value" id="codeDisplay">------</div>
+    </div>
+    <div id="pList"></div>
+    <button class="btn btn-green" onclick="hostStart()" style="margin-top:12px">▶ Start Game</button>
+    <button class="btn btn-purple" onclick="copyCode()">📋 Copy Code</button>
+    <div id="waitMsg" style="color:#aaa;font-size:11px;text-align:center;margin-top:8px"></div>
+</div>
+
+<!-- WINNER -->
+<div class="box" id="winBox" style="display:none">
+    <div class="title" id="winTitle">🏆 Game Over!</div>
+    <div id="winName" style="font-size:22px;font-weight:bold;text-align:center;margin:12px 0"></div>
+    <div id="finalList" style="margin-bottom:16px"></div>
+    <button class="btn btn-green" onclick="playAgain()">🔄 Play Again</button>
+    <button class="btn btn-red" onclick="location.reload()">🏠 Main Menu</button>
+</div>
+
+</div>
+
+<canvas id="game"></canvas>
+<button id="chatBtn" onclick="toggleChat()">💬</button>
+<div id="chat">
+    <div class="chat-box">
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="chat-row">
+            <input class="chat-inp" id="chatInp" placeholder="Message..." onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="chat-snd" onclick="sendChat()">▶</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// =================== CANVAS ===================
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+function resizeC(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+resizeC();
+window.addEventListener("resize",resizeC);
+
+// =================== CONSTANTS ===================
+const GAME_DURATION=180;
+const MAX_LIVES=3;
+const MAX_HP=100;
+const BULLET_DAMAGE=20;
+const BULLET_SPEED=15;
+const PLAYER_SPEED=4;
+const RESPAWN_DELAY=2500;
+const MAX_PARTICLES=80; // LIMIT particles to prevent freeze!
+const MAX_BULLETS=30;   // LIMIT bullets!
+const COLORS=["#e74c3c","#3498db","#2ecc71","#f39c12","#9b59b6","#1abc9c"];
+
+// =================== STATE ===================
+let myId=Math.random().toString(36).substr(2,8);
+let myName="Player";
+let roomCode="";
+let isHost=false;
+let gameOn=false;
+let players={};
+let myP=null;
+let frame=0;
+let keys={};
+let mx=0,my=0; // mouse position
+let bullets=[];
+let particles=[];
+let items=[];
+let channel=null;
+let shootCD=0;
+let gameTimer=GAME_DURATION;
+let timerInterval=null;
+let killFeed=[];
+let shakeAmt=0;
+let spawnShield=0;
+let speedUp=0;
+let shieldOn=false;
+let shieldT=0;
+let dmgUp=0;
+
+// =================== CHANNEL ===================
+function mkCode(){return Math.random().toString(36).substr(2,6).toUpperCase()}
+
+function openChannel(code){
+    channel=new BroadcastChannel("arena2_"+code);
+    channel.onmessage=onMsg;
+}
+
+function send(data){
+    if(channel)channel.postMessage({...data,sid:myId});
+}
+
+// =================== LOBBY ===================
+function createRoom(){
+    myName=document.getElementById("nameInp").value.trim()||"Player";
+    roomCode=mkCode();
+    isHost=true;
+    openChannel(roomCode);
+    enterLobby();
+}
+
+function joinRoom(){
+    myName=document.getElementById("nameInp").value.trim()||"Player";
+    let c=document.getElementById("codeInp").value.trim().toUpperCase();
+    if(c.length<3){alert("Enter room code!");return}
+    roomCode=c;
+    isHost=false;
+    openChannel(roomCode);
+    enterLobby();
+}
+
+function enterLobby(){
+    document.getElementById("menuBox").style.display="none";
+    document.getElementById("lobbyBox").style.display="block";
+    document.getElementById("codeDisplay").textContent=roomCode;
+    let ci=0;
+    players[myId]={
+        id:myId,name:myName,color:COLORS[ci],
+        x:400,y:300,vx:0,vy:0,
+        hp:MAX_HP,lives:MAX_LIVES,
+        score:0,kills:0,deaths:0,
+        angle:0,alive:true,isHost
+    };
+    myP=players[myId];
+    send({type:"join",id:myId,name:myName,isHost});
+    refreshLobby();
+}
+
+function copyCode(){
+    navigator.clipboard.writeText(roomCode).catch(()=>{});
+    document.querySelector("#lobbyBox .btn-purple").textContent="✅ Copied!";
+    setTimeout(()=>document.querySelector("#lobbyBox .btn-purple").textContent="📋 Copy Code",2000);
+}
+
+function refreshLobby(){
+    let el=document.getElementById("pList");
+    el.innerHTML="";
+    let ps=Object.values(players);
+    ps.forEach(p=>{
+        let d=document.createElement("div");
+        d.className="player-item";
+        d.innerHTML=`<div class="pdot" style="background:${p.color}"></div>
+            <span>${p.name}${p.isHost?" 👑":""}</span>
+            <span style="margin-left:auto;font-size:11px">❤️❤️❤️</span>`;
+        el.appendChild(d);
+    });
+    let n=ps.length;
+    document.getElementById("waitMsg").textContent=
+        n>=2?`${n} players ready!`:`Need at least 2 players (${n} here)`;
+}
+
+// =================== MESSAGES ===================
+function onMsg(e){
+    let d=e.data;
+    if(d.sid===myId)return; // ignore own
+
+    if(d.type==="join"){
+        let ci=Object.keys(players).length%COLORS.length;
+        if(!players[d.id]){
+            players[d.id]={
+                id:d.id,name:d.name,color:COLORS[ci],
+                x:300+Math.random()*200,y:200+Math.random()*200,
+                vx:0,vy:0,hp:MAX_HP,lives:MAX_LIVES,
+                score:0,kills:0,deaths:0,angle:0,alive:true,isHost:d.isHost
+            };
+        }
+        refreshLobby();
+        // Reply with my info
+        send({type:"info",id:myId,name:myName,isHost,
+            score:myP?.score||0,kills:myP?.kills||0,
+            lives:myP?.lives||MAX_LIVES,hp:myP?.hp||MAX_HP});
+        sysChat("⚡ "+d.name+" joined!");
+    }
+    else if(d.type==="info"){
+        if(!players[d.id]){
+            let ci=Object.keys(players).length%COLORS.length;
+            players[d.id]={id:d.id,name:d.name,color:COLORS[ci],x:300,y:200,vx:0,vy:0,hp:d.hp,lives:d.lives,score:d.score,kills:d.kills,deaths:0,angle:0,alive:true,isHost:d.isHost};
+        }
+        refreshLobby();
+    }
+    else if(d.type==="start"){
+        doStartGame();
+    }
+    else if(d.type==="pos"){
+        // Position update
+        let p=players[d.id];
+        if(p){p.x=d.x;p.y=d.y;p.vx=d.vx;p.vy=d.vy;p.angle=d.angle;p.hp=d.hp;p.lives=d.lives;p.score=d.score;p.kills=d.kills;p.alive=d.alive}
+    }
+    else if(d.type==="bullet"){
+        // Add bullet from other player
+        if(bullets.length<MAX_BULLETS){
+            bullets.push({
+                x:d.x,y:d.y,vx:d.vx,vy:d.vy,
+                oid:d.oid,oname:d.oname,ocolor:d.ocolor,
+                dmg:d.dmg,life:d.life||55,remote:true
+            });
+        }
+    }
+    else if(d.type==="kill"){
+        addKF(d.kname,d.vname,d.kcolor);
+        // Give killer score
+        if(players[d.kid])players[d.kid].score+=25;
+        if(players[d.kid])players[d.kid].kills++;
+    }
+    else if(d.type==="tick"){
+        gameTimer=d.t;
+    }
+    else if(d.type==="over"){
+        endGame(d.scores);
+    }
+    else if(d.type==="chat"){
+        addChat(d.name,d.text,d.color);
+    }
+    else if(d.type==="item"){
+        items.push(d.it);
+    }
+    else if(d.type==="itemGone"){
+        items=items.filter(it=>it.id!==d.id);
+    }
+        else if(d.type==="leave"){
+        if(players[d.id]){
+            sysChat("👋 "+players[d.id].name+" left");
+            delete players[d.id];
+            refreshLobby();
+        }
+    }
+    // ✅ NEW - Handle when I get hit by someone's bullet
+    else if(d.type==="gotHit"){
+        if(d.targetId===myId && myP && myP.alive){
+
+            // Blocked by spawn shield
+            if(spawnShield>0){
+                let n=Math.min(3,MAX_PARTICLES-particles.length);
+                for(let j=0;j<n;j++){
+                    let a=Math.random()*Math.PI*2;
+                    addParticle(myP.x,myP.y,Math.cos(a)*3,Math.sin(a)*3,"#f1c40f",2,15,"dot");
+                }
+                return;
+            }
+
+            // Blocked by shield
+            if(shieldOn){
+                let n=Math.min(3,MAX_PARTICLES-particles.length);
+                for(let j=0;j<n;j++){
+                    let a=Math.random()*Math.PI*2;
+                    addParticle(myP.x,myP.y,Math.cos(a)*3,Math.sin(a)*3,"#3498db",2,15,"dot");
+                }
+                return;
+            }
+
+            // Apply damage
+            let dmg=d.damage||BULLET_DAMAGE;
+            myP.hp-=dmg;
+            shakeAmt=8;
+
+            // Show -20 damage text
+            addParticle(myP.x,myP.y-30,0,-1.5,"#e74c3c",0,40,"dmgtext");
+
+            // Blood particles
+            let n=Math.min(6,MAX_PARTICLES-particles.length);
+            for(let j=0;j<n;j++){
+                let a=Math.random()*Math.PI*2;
+                addParticle(
+                    d.bulletX||myP.x,
+                    d.bulletY||myP.y,
+                    Math.cos(a)*4,Math.sin(a)*3,
+                    "#e74c3c",3,22,"blood"
+                );
+            }
+
+            // Check if I died
+            if(myP.hp<=0){
+                myP.hp=0;
+                myP.alive=false;
+                myP.lives--;
+                myP.deaths=(myP.deaths||0)+1;
+
+                // Big death explosion
+                let n2=Math.min(12,MAX_PARTICLES-particles.length);
+                for(let j=0;j<n2;j++){
+                    let a=Math.random()*Math.PI*2;
+                    let s=Math.random()*7+2;
+                    addParticle(myP.x,myP.y,
+                        Math.cos(a)*s,Math.sin(a)*s,
+                        Math.random()>0.5?"#e74c3c":"#ff7675",
+                        4,45,"blood");
+                }
+
+                // Show kill feed
+                addKF(d.shooterName||"???",myName,d.shooterColor||"#e74c3c");
+
+                // Tell everyone about the kill
+                send({type:"kill",
+                    kid:d.shooterId,
+                    kname:d.shooterName,
+                    vname:myName,
+                    kcolor:d.shooterColor
+                });
+
+                if(myP.lives>0){
+                    sysChat("💀 Killed by "+d.shooterName+"! ("+myP.lives+"❤️ left)");
+                    // Respawn after delay
+                    setTimeout(()=>{
+                        if(myP&&gameOn&&myP.lives>0){
+                            myP.alive=true;
+                            myP.hp=MAX_HP;
+                            myP.x=80+Math.random()*(canvas.width-160);
+                            myP.y=70+Math.random()*(canvas.height-140);
+                            spawnShield=150;
+                            sysChat("✨ Respawned! "+myP.lives+"❤️ left");
+                        }
+                    },RESPAWN_DELAY);
+                }else{
+                    sysChat("☠️ All lives lost! Spectating...");
+                }
+            }
+        }
+    }
+}
+
+
+// =================== START GAME ===================
+function hostStart(){
+    send({type:"start"});
+    doStartGame();
+}
+
+function doStartGame(){
+    document.getElementById("ui").style.display="none";
+    document.getElementById("chatBtn").style.display="block";
+    gameOn=true;
+    gameTimer=GAME_DURATION;
+    bullets=[];particles=[];items=[];killFeed=[];
+
+    // Position all players
+    let ps=Object.values(players);
+    ps.forEach((p,i)=>{
+        let ang=(i/ps.length)*Math.PI*2;
+        p.x=canvas.width/2+Math.cos(ang)*180;
+        p.y=canvas.height/2+Math.sin(ang)*180;
+        p.hp=MAX_HP;p.lives=MAX_LIVES;
+        p.alive=true;p.score=0;p.kills=0;p.deaths=0;
+    });
+
+    if(isHost){
+        // Host runs the timer
+        timerInterval=setInterval(()=>{
+            gameTimer--;
+            send({type:"tick",t:gameTimer});
+            // Spawn item every 12 seconds
+            if(gameTimer>0&&gameTimer%12===0)doSpawnItem();
+            if(gameTimer<=0){
+                clearInterval(timerInterval);
+                let scores=Object.values(players).map(p=>({
+                    name:p.name,score:p.score,
+                    kills:p.kills,deaths:p.deaths||0,color:p.color
+                }));
+                send({type:"over",scores});
+                endGame(scores);
+            }
+        },1000);
+        // Spawn 3 items to start
+        setTimeout(()=>{doSpawnItem();doSpawnItem();doSpawnItem()},500);
+    }
+
+    sysChat("🎮 FIGHT! 3 minutes!");
+    requestAnimationFrame(gameLoop);
+}
+
+function doSpawnItem(){
+    let types=["health","speed","shield","dmg"];
+    let it={
+        id:Math.random().toString(36).substr(2,6),
+        type:types[Math.floor(Math.random()*types.length)],
+        x:80+Math.random()*(canvas.width-160),
+        y:70+Math.random()*(canvas.height-140),
+        pulse:Math.random()*Math.PI*2
+    };
+    items.push(it);
+    send({type:"item",it});
+}
+
+// =================== DAMAGE ===================
+function takeDmg(amt,killerName,killerId){
+    if(!myP||!myP.alive||shieldOn||spawnShield>0)return;
+    myP.hp-=amt;
+    shakeAmt=8;
+
+    // Small blood burst - LIMITED particles
+    let n=Math.min(6,MAX_PARTICLES-particles.length);
+    for(let i=0;i<n;i++){
+        let a=Math.random()*Math.PI*2;
+        addParticle(myP.x,myP.y,Math.cos(a)*4,Math.sin(a)*3,"#e74c3c",3,25,"blood");
+    }
+
+    if(myP.hp<=0){
+        myP.hp=0;
+        myP.alive=false;
+        myP.lives--;
+        myP.deaths=(myP.deaths||0)+1;
+
+        // Death burst - LIMITED
+        let n2=Math.min(10,MAX_PARTICLES-particles.length);
+        for(let i=0;i<n2;i++){
+            let a=Math.random()*Math.PI*2;
+            let s=Math.random()*6+2;
+            addParticle(myP.x,myP.y,Math.cos(a)*s,Math.sin(a)*s,Math.random()>0.5?"#e74c3c":"#ff7675",4,45,"blood");
+        }
+
+        addKF(killerName,myName,"#e74c3c");
+        send({type:"kill",kid:killerId,kname:killerName,vname:myName,kcolor:"#e74c3c"});
+
+        if(myP.lives>0){
+            sysChat("💀 Died! Respawning... ("+myP.lives+" lives left)");
+            setTimeout(()=>{
+                if(myP&&gameOn){
+                    myP.alive=true;
+                    myP.hp=MAX_HP;
+                    myP.x=80+Math.random()*(canvas.width-160);
+                    myP.y=70+Math.random()*(canvas.height-140);
+                    spawnShield=150;
+                }
+            },RESPAWN_DELAY);
+        }else{
+            sysChat("☠️ All lives gone! Spectating...");
+        }
+    }
+}
+
+function addParticle(x,y,vx,vy,color,size,life,type){
+    if(particles.length>=MAX_PARTICLES)return; // PREVENT OVERFLOW!
+    particles.push({x,y,vx,vy,color,size,life,maxLife:life,type:type||"dot"});
+}
+
+function addKF(k,v,c){
+    killFeed.unshift({k,v,c,t:160});
+    if(killFeed.length>4)killFeed.pop();
+}
+
+// =================== GAME LOOP ===================
+let lastT=0;
+function gameLoop(ts){
+    if(!gameOn)return;
+
+    // FPS cap - max 60fps
+    if(ts-lastT<14){requestAnimationFrame(gameLoop);return}
+    lastT=ts;
+    frame++;
+
+    // Screen shake offset
+    let sx=0,sy=0;
+    if(shakeAmt>0){
+        sx=(Math.random()-0.5)*shakeAmt;
+        sy=(Math.random()-0.5)*shakeAmt;
+        shakeAmt*=0.8;
+        if(shakeAmt<0.5)shakeAmt=0;
+    }
+
+    ctx.save();
+    ctx.translate(sx,sy);
+
+    // ===== BACKGROUND =====
+    ctx.fillStyle="#0a0a1a";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Grid (simple)
+    ctx.strokeStyle="rgba(255,255,255,0.03)";
+    ctx.lineWidth=1;
+    for(let x=0;x<canvas.width;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke()}
+    for(let y=0;y<canvas.height;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke()}
+
+    // Border
+    ctx.strokeStyle="rgba(231,76,60,0.4)";ctx.lineWidth=3;
+    ctx.strokeRect(22,22,canvas.width-44,canvas.height-44);
+
+    // ===== TIMERS =====
+    if(spawnShield>0)spawnShield--;
+    if(speedUp>0)speedUp--;
+    if(shieldT>0){shieldT--;if(shieldT<=0)shieldOn=false}
+    if(dmgUp>0)dmgUp--;
+    if(shootCD>0)shootCD--;
+
+    // ===== MY PLAYER MOVEMENT =====
+    if(myP&&myP.alive){
+        let spd=speedUp>0?7:PLAYER_SPEED;
+        if(keys["w"]||keys["ArrowUp"])myP.vy-=0.55;
+        if(keys["s"]||keys["ArrowDown"])myP.vy+=0.55;
+        if(keys["a"]||keys["ArrowLeft"])myP.vx-=0.55;
+        if(keys["d"]||keys["ArrowRight"])myP.vx+=0.55;
+        myP.vx*=0.86;myP.vy*=0.86;
+        myP.vx=Math.max(-spd,Math.min(spd,myP.vx));
+        myP.vy=Math.max(-spd,Math.min(spd,myP.vy));
+        myP.x=Math.max(32,Math.min(canvas.width-32,myP.x+myP.vx));
+        myP.y=Math.max(32,Math.min(canvas.height-32,myP.y+myP.vy));
+        myP.angle=Math.atan2(my-myP.y,mx-myP.x);
+
+        // Broadcast position every 4 frames
+        if(frame%4===0){
+            send({type:"pos",id:myId,
+                x:myP.x,y:myP.y,vx:myP.vx,vy:myP.vy,
+                angle:myP.angle,hp:myP.hp,lives:myP.lives,
+                score:myP.score,kills:myP.kills,alive:myP.alive});
+        }
+
+        // Item pickup
+        for(let i=items.length-1;i>=0;i--){
+            let it=items[i];
+            let dx=myP.x-it.x,dy=myP.y-it.y;
+            if(Math.sqrt(dx*dx+dy*dy)<28){
+                applyItem(it.type);
+                items.splice(i,1);
+                send({type:"itemGone",id:it.id});
+            }
+        }
+    }
+
+    // ===== ITEMS =====
+    items.forEach(it=>{
+        it.pulse+=0.05;
+        let cols={health:"#e74c3c",speed:"#f39c12",shield:"#3498db",dmg:"#9b59b6"};
+        let icons={health:"❤️",speed:"⚡",shield:"🛡️",dmg:"💥"};
+        let c=cols[it.type]||"#fff";
+        let pulse=Math.sin(it.pulse)*0.25+0.75;
+        ctx.globalAlpha=pulse;
+        ctx.shadowColor=c;ctx.shadowBlur=12;
+        ctx.beginPath();ctx.arc(it.x,it.y,15,0,Math.PI*2);
+        ctx.fillStyle=c+"44";ctx.fill();
+        ctx.strokeStyle=c;ctx.lineWidth=2;ctx.stroke();
+        ctx.shadowBlur=0;ctx.globalAlpha=1;
+        ctx.font="14px Arial";ctx.textAlign="center";
+        ctx.fillText(icons[it.type]||"?",it.x,it.y+5);
+    });
+
+    // ===== PLAYERS =====
+    Object.values(players).forEach(p=>{
+        if(!p.alive){
+            // Ghost
+            ctx.globalAlpha=0.25;
+            ctx.font="22px Arial";ctx.textAlign="center";
+            ctx.fillText("💀",p.x,p.y+8);
+            ctx.globalAlpha=1;
+            return;
+        }
+
+        let isMe=p.id===myId;
+
+        // Spawn shield glow
+        if(isMe&&spawnShield>0){
+            ctx.globalAlpha=0.25+Math.sin(frame*0.2)*0.15;
+            ctx.beginPath();ctx.arc(p.x,p.y,28,0,Math.PI*2);
+            ctx.fillStyle="#f1c40f33";ctx.fill();
+            ctx.strokeStyle="#f1c40f";ctx.lineWidth=2;ctx.stroke();
+            ctx.globalAlpha=1;
+        }
+
+        // Shield
+        if(isMe&&shieldOn){
+            ctx.globalAlpha=0.4+Math.sin(frame*0.15)*0.2;
+            ctx.beginPath();ctx.arc(p.x,p.y,26,0,Math.PI*2);
+            ctx.strokeStyle="#3498db";ctx.lineWidth=3;ctx.stroke();
+            ctx.globalAlpha=1;
+        }
+
+        // Shadow
+        ctx.fillStyle="rgba(0,0,0,0.25)";
+        ctx.beginPath();ctx.ellipse(p.x,p.y+19,14,5,0,0,Math.PI*2);ctx.fill();
+
+        // Body
+        ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);
+        let bg=ctx.createRadialGradient(p.x-3,p.y-3,3,p.x,p.y,18);
+        bg.addColorStop(0,p.color);bg.addColorStop(1,p.color+"88");
+        ctx.fillStyle=bg;ctx.fill();
+        ctx.strokeStyle=isMe?"rgba(255,255,255,0.85)":"rgba(255,255,255,0.3)";
+        ctx.lineWidth=isMe?2.5:1.5;ctx.stroke();
+
+        // Gun
+        ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);
+        ctx.fillStyle="#444";ctx.fillRect(8,-5,22,10);
+        ctx.fillStyle=p.color;ctx.fillRect(8,-3,20,6);
+        ctx.restore();
+
+        // Eyes
+        ctx.fillStyle="white";
+        ctx.beginPath();ctx.arc(p.x-5,p.y-3,3,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(p.x+5,p.y-3,3,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle="#111";
+        ctx.beginPath();ctx.arc(p.x-5+Math.cos(p.angle),p.y-3+Math.sin(p.angle),1.5,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(p.x+5+Math.cos(p.angle),p.y-3+Math.sin(p.angle),1.5,0,Math.PI*2);ctx.fill();
+
+        // Name tag
+        ctx.fillStyle="rgba(0,0,0,0.75)";
+        let nw=ctx.measureText(p.name).width+12;
+        ctx.beginPath();ctx.roundRect(p.x-nw/2,p.y-44,nw,17,4);ctx.fill();
+        ctx.fillStyle=isMe?"#f1c40f":"white";
+        ctx.font="bold 11px Arial";ctx.textAlign="center";
+        ctx.fillText(p.name,p.x,p.y-30);
+
+        // HP bar
+        let bw=40,bh=5;
+        ctx.fillStyle="rgba(0,0,0,0.6)";
+        ctx.beginPath();ctx.roundRect(p.x-bw/2,p.y-53,bw,bh,2);ctx.fill();
+        let hpPct=p.hp/MAX_HP;
+        ctx.fillStyle=hpPct>0.6?"#2ecc71":hpPct>0.3?"#f39c12":"#e74c3c";
+        if(p.hp>0){ctx.beginPath();ctx.roundRect(p.x-bw/2,p.y-53,bw*hpPct,bh,2);ctx.fill()}
+
+        // HP text
+        ctx.fillStyle="white";ctx.font="8px Arial";ctx.textAlign="center";
+        ctx.fillText(p.hp+"/"+MAX_HP,p.x,p.y-50);
+
+        // Lives (hearts)
+        ctx.font="11px Arial";
+        for(let i=0;i<MAX_LIVES;i++){
+            ctx.fillText(i<p.lives?"❤️":"🖤",p.x-12+i*13,p.y-58);
+        }
+
+        // Score badge
+        if(p.score>0){
+            ctx.fillStyle=p.color+"dd";
+            ctx.beginPath();ctx.arc(p.x+20,p.y-18,12,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle="white";ctx.font="bold 10px Arial";ctx.textAlign="center";
+            ctx.fillText(p.score,p.x+20,p.y-14);
+        }
+    });
+
+        // ===== BULLETS (COMPLETE FIX) =====
+    let newBullets=[];
+    for(let i=0;i<bullets.length;i++){
+        let b=bullets[i];
+        b.x+=b.vx;
+        b.y+=b.vy;
+        b.life--;
+
+        // Out of bounds or expired - remove
+        if(b.x<20||b.x>canvas.width-20||
+           b.y<20||b.y>canvas.height-20||
+           b.life<=0) continue;
+
+        // Draw bullet
+        ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);
+        ctx.fillStyle=b.color||b.ocolor||"#fff";ctx.fill();
+        ctx.shadowColor=b.color||b.ocolor||"#fff";
+        ctx.shadowBlur=6;ctx.fill();ctx.shadowBlur=0;
+
+        let hitSomething=false;
+
+        // ===== CASE 1: MY bullet hitting OTHER players =====
+        if(b.oid===myId){
+            for(let pid in players){
+                if(pid===myId)continue; // skip myself
+                let p=players[pid];
+                if(!p.alive)continue;
+
+                let dx=b.x-p.x, dy=b.y-p.y;
+                let dist=Math.sqrt(dx*dx+dy*dy);
+
+                if(dist<22){
+                    hitSomething=true;
+
+                    // MY score goes up
+                    myP.score+=5;
+
+                    // Show +5 score popup on MY screen
+                    addParticle(myP.x,myP.y-25,0,-1,"#f1c40f",0,35,"score");
+
+                    // Blood at hit point
+                    let n=Math.min(5,MAX_PARTICLES-particles.length);
+                    for(let j=0;j<n;j++){
+                        let a=Math.random()*Math.PI*2;
+                        addParticle(b.x,b.y,Math.cos(a)*4,Math.sin(a)*3,"#e74c3c",3,20,"blood");
+                    }
+
+                    // White sparks
+                    let n2=Math.min(3,MAX_PARTICLES-particles.length);
+                    for(let j=0;j<n2;j++){
+                        let a=Math.random()*Math.PI*2;
+                        addParticle(b.x,b.y,Math.cos(a)*3,Math.sin(a)*3,"#fff",2,10,"dot");
+                    }
+
+                    // TELL the other player they got hit!
+                    // This is the KEY message - only sent ONCE per bullet hit
+                    send({
+                        type:"gotHit",
+                        targetId:pid,
+                        damage:b.dmg||BULLET_DAMAGE,
+                        shooterId:myId,
+                        shooterName:myName,
+                        shooterColor:myP.color,
+                        bulletX:b.x,
+                        bulletY:b.y
+                    });
+
+                    // Also update the other player's HP locally on MY screen
+                    // (so I can see their HP going down too)
+                    p.hp=Math.max(0,p.hp-(b.dmg||BULLET_DAMAGE));
+
+                    // If they died (HP reached 0)
+                    if(p.hp<=0){
+                        p.alive=false;
+                        p.lives--;
+                        p.hp=0;
+                        myP.score+=20; // kill bonus!
+                        myP.kills++;
+
+                        // Show kill popup
+                        addParticle(myP.x,myP.y-40,0,-1,"#2ecc71",0,50,"killtext");
+                        addKF(myName,p.name,myP.color);
+
+                        // Death explosion on other player
+                        let n3=Math.min(8,MAX_PARTICLES-particles.length);
+                        for(let j=0;j<n3;j++){
+                            let a=Math.random()*Math.PI*2;
+                            let s=Math.random()*6+2;
+                            addParticle(p.x,p.y,Math.cos(a)*s,Math.sin(a)*s,
+                                Math.random()>0.5?"#e74c3c":"#ff7675",4,40,"blood");
+                        }
+                    }
+
+                    break; // only hit one player per bullet
+                }
+            }
+        }
+
+        // ===== CASE 2: OTHER player's bullet hitting ME =====
+        // This is handled via the "gotHit" message below
+        // We DON'T check collision here for remote bullets!
+        // This prevents the double-damage and sync issues
+
+        if(!hitSomething){
+            newBullets.push(b);
+        }
+    }
+    bullets=newBullets;
+
+    // ===== PARTICLES =====
+    let newP=[];
+    for(let i=0;i<particles.length;i++){
+        let p=particles[i];
+        p.x+=p.vx;p.y+=p.vy;p.life--;
+        if(p.type==="blood")p.vy+=0.2; // gravity
+
+        let alpha=p.life/p.maxLife;
+        ctx.globalAlpha=Math.max(0,alpha);
+
+               if(p.type==="score"){
+            ctx.fillStyle="#f1c40f";
+            ctx.font="bold 15px Arial";
+            ctx.textAlign="center";
+            ctx.fillText("+5",p.x,p.y);
+        }
+        else if(p.type==="killtext"){
+            ctx.fillStyle="#2ecc71";
+            ctx.font="bold 16px Arial";
+            ctx.textAlign="center";
+            ctx.fillText("☠ KILL! +20",p.x,p.y);
+        }
+        else if(p.type==="dmgtext"){
+            ctx.fillStyle="#e74c3c";
+            ctx.font="bold 15px Arial";
+            ctx.textAlign="center";
+            ctx.fillText("-"+BULLET_DAMAGE,p.x,p.y);
+        }
+        else{
+            // Normal dot/blood particle
+            ctx.beginPath();
+            ctx.arc(p.x,p.y,Math.max(0.5,p.size*alpha),0,Math.PI*2);
+            ctx.fillStyle=p.color;
+            ctx.fill();
+        }
+        ctx.globalAlpha=1;
+
+        if(p.life>0)newP.push(p);
+    }
+    particles=newP;
+
+    ctx.restore(); // end screen shake
+
+    // ===== HUD =====
+    // Top bar
+    ctx.fillStyle="rgba(0,0,10,0.8)";
+    ctx.fillRect(0,0,canvas.width,52);
+    ctx.fillStyle="rgba(241,196,15,0.25)";
+    ctx.fillRect(0,51,canvas.width,1);
+
+    // Timer
+    let mins=Math.floor(gameTimer/60);
+    let secs=gameTimer%60;
+    let tStr=mins+":"+(secs<10?"0":"")+secs;
+    let isLow=gameTimer<=30;
+    ctx.font="bold 26px Arial";ctx.textAlign="center";
+    ctx.fillStyle=isLow?(frame%20<10?"#ff4444":"#e74c3c"):"#f1c40f";
+    ctx.fillText("⏱ "+tStr,canvas.width/2,38);
+
+    // My stats - left
+    if(myP){
+        ctx.textAlign="left";
+        ctx.font="bold 13px Arial";
+        ctx.fillStyle="#fff";ctx.fillText("Score: ",12,20);
+        ctx.fillStyle="#f1c40f";ctx.fillText(myP.score,68,20);
+        ctx.fillStyle="#fff";ctx.fillText("Kills: ",12,38);
+        ctx.fillStyle="#2ecc71";ctx.fillText(myP.kills,62,38);
+
+        // Lives
+        ctx.font="13px Arial";
+        for(let i=0;i<MAX_LIVES;i++){
+            ctx.fillText(i<myP.lives?"❤️":"🖤",130+i*18,22);
+        }
+
+        // HP bar
+        let hx=128,hy=28,hw=110,hh=14;
+        ctx.fillStyle="rgba(255,255,255,0.1)";
+        ctx.beginPath();ctx.roundRect(hx,hy,hw,hh,4);ctx.fill();
+        let hpPct=myP.hp/MAX_HP;
+        ctx.fillStyle=hpPct>0.6?"#2ecc71":hpPct>0.3?"#f39c12":"#e74c3c";
+        if(myP.hp>0){ctx.beginPath();ctx.roundRect(hx,hy,hw*hpPct,hh,4);ctx.fill()}
+        ctx.fillStyle="white";ctx.font="bold 9px Arial";ctx.textAlign="center";
+        ctx.fillText(myP.hp+"/"+MAX_HP,hx+hw/2,hy+11);
+    }
+
+    // Leaderboard - right
+    let sorted=Object.values(players).sort((a,b)=>b.score-a.score);
+    let medals=["🥇","🥈","🥉","4️⃣"];
+    ctx.textAlign="right";ctx.font="bold 12px Arial";
+    sorted.slice(0,4).forEach((p,i)=>{
+        ctx.fillStyle=p.id===myId?"#f1c40f":p.color;
+        ctx.fillText(medals[i]+" "+p.name+": "+p.score,canvas.width-12,16+i*16);
+    });
+
+    // Kill feed
+    killFeed.forEach((kf,i)=>{
+        if(kf.t>0){
+            kf.t--;
+            ctx.globalAlpha=Math.min(1,kf.t/20);
+            ctx.font="bold 11px Arial";ctx.textAlign="center";
+            let isMyKill=kf.k===myName;
+            ctx.fillStyle=isMyKill?"#f1c40f":"#e74c3c";
+            ctx.fillText("☠ "+kf.k+" → "+kf.v,canvas.width/2,60+i*16);
+            ctx.globalAlpha=1;
+        }
+    });
+    killFeed=killFeed.filter(kf=>kf.t>0);
+
+    // Power up indicators
+    let pyInd=canvas.height-12;
+    ctx.textAlign="left";ctx.font="bold 11px Arial";
+    if(speedUp>0){ctx.fillStyle="#f39c12";ctx.fillText("⚡ Speed "+(Math.ceil(speedUp/60))+"s",12,pyInd);pyInd-=18}
+    if(shieldOn){ctx.fillStyle="#3498db";ctx.fillText("🛡️ Shield "+(Math.ceil(shieldT/60))+"s",12,pyInd);pyInd-=18}
+    if(dmgUp>0){ctx.fillStyle="#9b59b6";ctx.fillText("💥 2x DMG "+(Math.ceil(dmgUp/60))+"s",12,pyInd);pyInd-=18}
+
+    // Dead message
+    if(myP&&!myP.alive&&myP.lives>0){
+        ctx.fillStyle="rgba(0,0,0,0.6)";
+        ctx.beginPath();ctx.roundRect(canvas.width/2-130,canvas.height/2-22,260,44,10);ctx.fill();
+        ctx.strokeStyle="rgba(255,255,255,0.15)";ctx.lineWidth=1;ctx.stroke();
+        ctx.fillStyle="white";ctx.font="bold 15px Arial";ctx.textAlign="center";
+        ctx.fillText("💀 Respawning... "+myP.lives+"❤️ left",canvas.width/2,canvas.height/2+6);
+    }
+    if(myP&&!myP.alive&&myP.lives<=0){
+        ctx.fillStyle="rgba(0,0,0,0.6)";
+        ctx.beginPath();ctx.roundRect(canvas.width/2-110,canvas.height/2-22,220,44,10);ctx.fill();
+        ctx.fillStyle="#e74c3c";ctx.font="bold 15px Arial";ctx.textAlign="center";
+        ctx.fillText("☠️ Spectating...",canvas.width/2,canvas.height/2+6);
+    }
+
+    // Controls hint
+    ctx.fillStyle="rgba(255,255,255,0.25)";ctx.font="10px Arial";ctx.textAlign="center";
+    ctx.fillText("WASD=Move  Mouse=Aim  Click=Shoot",canvas.width/2,canvas.height-6);
+
+    requestAnimationFrame(gameLoop);
+}
+
+// =================== ITEM APPLY ===================
+function applyItem(type){
+    if(!myP)return;
+    if(type==="health"){myP.hp=Math.min(MAX_HP,myP.hp+40);sysChat("❤️ +40 HP!")}
+    else if(type==="speed"){speedUp=360;sysChat("⚡ Speed 6s!")}
+    else if(type==="shield"){shieldOn=true;shieldT=300;sysChat("🛡️ Shield 5s!")}
+    else if(type==="dmg"){dmgUp=360;sysChat("💥 2x Damage 6s!")}
+}
+
+// =================== SHOOTING ===================
+canvas.addEventListener("click",e=>{
+    if(!myP||!myP.alive||!gameOn)return;
+    if(shootCD>0)return;
+    let angle=Math.atan2(e.clientY-myP.y,e.clientX-myP.x);
+    let dmg=dmgUp>0?40:BULLET_DAMAGE;
+    let spd=BULLET_SPEED;
+
+    let b={
+        x:myP.x+Math.cos(angle)*26,
+        y:myP.y+Math.sin(angle)*26,
+        vx:Math.cos(angle)*spd,
+        vy:Math.sin(angle)*spd,
+        oid:myId,oname:myName,
+        ocolor:myP.color,
+        color:myP.color,
+        dmg,life:55
+    };
+
+    // Only add if under limit
+    if(bullets.length<MAX_BULLETS){
+        bullets.push(b);
+        send({type:"bullet",...b});
+    }
+
+    // Muzzle flash - LIMITED
+    let n=Math.min(3,MAX_PARTICLES-particles.length);
+    for(let i=0;i<n;i++){
+        let a=angle+(Math.random()-0.5)*0.6;
+        addParticle(b.x,b.y,Math.cos(a)*4,Math.sin(a)*4,"#f1c40f",2.5,8,"dot");
+    }
+
+    shootCD=10; // fire rate
+});
+
+// Mouse hold to shoot
+let mouseDown=false;
+canvas.addEventListener("mousedown",e=>{mouseDown=true});
+canvas.addEventListener("mouseup",e=>{mouseDown=false});
+setInterval(()=>{
+    if(mouseDown&&myP&&myP.alive&&gameOn&&shootCD<=0){
+        canvas.dispatchEvent(new MouseEvent("click",{clientX:mx,clientY:my,bubbles:true}));
+    }
+},80);
+
+canvas.addEventListener("mousemove",e=>{
+    mx=e.clientX;my=e.clientY;
+    if(myP)myP.angle=Math.atan2(my-myP.y,mx-myP.x);
+});
+
+// Touch support
+canvas.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    let t=e.touches[0];
+    mx=t.clientX;my=t.clientY;
+    if(myP)myP.angle=Math.atan2(my-myP.y,mx-myP.x);
+},{passive:false});
+canvas.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    let t=e.touches[0];
+    mx=t.clientX;my=t.clientY;
+    if(myP&&myP.alive&&gameOn&&shootCD<=0){
+        canvas.dispatchEvent(new MouseEvent("click",{clientX:mx,clientY:my,bubbles:true}));
+    }
+},{passive:false});
+
+window.addEventListener("keydown",e=>{keys[e.key]=true});
+window.addEventListener("keyup",e=>{keys[e.key]=false});
+window.addEventListener("beforeunload",()=>send({type:"leave",id:myId}));
+
+// =================== END GAME ===================
+function endGame(scores){
+    gameOn=false;
+    if(timerInterval)clearInterval(timerInterval);
+
+    document.getElementById("ui").style.display="flex";
+    document.getElementById("lobbyBox").style.display="none";
+    document.getElementById("menuBox").style.display="none";
+    document.getElementById("chatBtn").style.display="none";
+    document.getElementById("winBox").style.display="block";
+
+    if(!scores){
+        scores=Object.values(players).map(p=>({
+            name:p.name,score:p.score,kills:p.kills,
+            deaths:p.deaths||0,color:p.color
+        }));
+    }
+    scores.sort((a,b)=>b.score-a.score);
+
+    let winner=scores[0]||{name:"Nobody",score:0,color:"#fff"};
+    let isMe=winner.name===myName;
+
+    document.getElementById("winTitle").textContent=isMe?"🏆 YOU WIN!":"🏆 Game Over!";
+    document.getElementById("winTitle").style.color=isMe?"#f1c40f":"#e74c3c";
+    document.getElementById("winName").textContent="👑 "+winner.name+" — "+winner.score+" pts!";
+    document.getElementById("winName").style.color=winner.color;
+
+    let html="";
+    let m=["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣"];
+    scores.forEach((s,i)=>{
+        let isMine=s.name===myName;
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;
+            padding:10px 14px;margin-bottom:6px;border-radius:8px;
+            background:${isMine?"rgba(241,196,15,0.12)":"rgba(255,255,255,0.04)"};
+            border:1px solid ${isMine?"rgba(241,196,15,0.3)":"rgba(255,255,255,0.07)"};
+            color:white;font-size:13px">
+            <div>
+                <span style="font-size:16px">${m[i]||"•"}</span>
+                <span style="color:${s.color};font-weight:bold;margin-left:8px">${s.name}</span>
+                ${isMine?"<span style='color:#f1c40f;font-size:10px'> YOU</span>":""}
+            </div>
+            <div style="text-align:right">
+                <div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
+                <div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
+            </div>
+        </div>`;
+    });
+    document.getElementById("finalList").innerHTML=html;
+}
+
+function playAgain(){
+    document.getElementById("winBox").style.display="none";
+    document.getElementById("lobbyBox").style.display="block";
+    document.getElementById("chatBtn").style.display="block";
+    bullets=[];particles=[];items=[];killFeed=[];
+    gameTimer=GAME_DURATION;shootCD=0;
+    Object.values(players).forEach(p=>{
+        p.score=0;p.kills=0;p.deaths=0;
+        p.hp=MAX_HP;p.lives=MAX_LIVES;p.alive=true;
+    });
+    refreshLobby();
+}
+
+// =================== CHAT ===================
+function toggleChat(){
+    let c=document.getElementById("chat");
+    c.style.display=c.style.display==="flex"?"none":"flex";
+}
+function sendChat(){
+    let inp=document.getElementById("chatInp");
+    let txt=inp.value.trim();if(!txt)return;
+    addChat(myName,txt,myP?.color||"#fff");
+    send({type:"chat",name:myName,text:txt,color:myP?.color});
+    inp.value="";
+}
+function addChat(name,text,color){
+    let el=document.getElementById("chatMsgs");
+    let d=document.createElement("div");
+    d.className="chat-msg";
+    d.innerHTML=`<span style="color:${color||"#fff"};font-weight:bold">${name}:</span> ${text}`;
+    el.appendChild(d);
+    el.scrollTop=el.scrollHeight;
+}
+function sysChat(t){addChat("•",t,"#aaa")}
+</script>
+</body>
+</html>
