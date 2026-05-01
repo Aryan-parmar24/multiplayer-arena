@@ -208,6 +208,8 @@
             <input id="codeInp" placeholder="Room Code" maxlength="6"
                 style="text-transform:uppercase;text-align:center;letter-spacing:5px;font-size:20px">
             <button class="btn btn-blue" onclick="joinRoom()">🚪 Join Room</button>
+            <button class="btn btn-gray" onclick="toggleAudio()" style="margin-top:5px">🔊 Sound On</button>
+            <button class="btn btn-gray" onclick="showHistory()" style="margin-top:5px">📜 Match History</button>
             <div class="connecting" id="connStatus" style="display:none"><span class="spin"></span>Connecting...</div>
         </div>
 
@@ -219,7 +221,6 @@
                 <div class="room-code-value" id="codeShow">------</div>
             </div>
             <div id="pList"></div>
-            <!-- Only host sees start button -->
             <button class="btn btn-green" id="startBtn" onclick="hostStart()" style="margin-top:12px;display:none">▶
                 Start Game</button>
             <button class="btn btn-gray" id="waitBtn" style="margin-top:12px;display:none">⏳ Waiting for host to
@@ -296,42 +297,195 @@
         let shieldOn = false;
         let shieldT = 0;
         let dmgUp = 0;
-        let channel = null; // Supabase realtime channel
+        let channel = null;
+        let channelReady = false;
+
+        // Visual effects variables
+        let hitFlash = 0;
+        let hitMarker = 0;
+        let trailParticles = [];
+        let streakEffects = [];
+        let lastX = 0, lastY = 0;
+
+        // Audio variables
+        let audioEnabled = true;
+        let audioContext = null;
+
+        // Social features variables
+        let badges = {};
+        let matchHistory = [];
+        let emotes = ["👋", "🎉", "💀", "🔥", "👍", "😎"];
+        let emoteCooldown = 0;
+        let playerTitles = {
+            "firstblood": "🗡️ First Blood",
+            "veteran": "⭐ Veteran",
+            "dominator": "💀 Dominator",
+            "survivor": "🛡️ Survivor"
+        };
+
+        // Load saved data
+        let savedHistory = localStorage.getItem("matchHistory");
+        if (savedHistory) matchHistory = JSON.parse(savedHistory);
+        let savedBadges = localStorage.getItem("badges");
+        if (savedBadges) badges = JSON.parse(savedBadges);
+
+        // =================== HELPER FUNCTIONS ===================
+        function addPart(x, y, vx, vy, color, size, life, type) {
+            if (particles.length >= MAX_PARTS) return;
+            particles.push({ x, y, vx, vy, color, size, life, maxLife: life, type: type || "dot" });
+        }
+
+        function addKF(k, v, c) {
+            killFeed.unshift({ k, v, c, t: 160 });
+            if (killFeed.length > 4) killFeed.pop();
+        }
+
+        function addChat(name, text, color) {
+            killFeed.push({ k: name, v: text, c: color || "#fff", t: 200, isChat: true });
+            if (killFeed.length > 6) killFeed.shift();
+        }
+
+        function sysChat(t) { addChat("•", t, "#aaa") }
+
+        function addStreakEffect(x, y, text, color) {
+            streakEffects.push({ x, y, text, color, life: 40 });
+        }
+
+        // =================== AUDIO FUNCTIONS ===================
+        function initAudio() {
+            if (!audioEnabled) return;
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) { console.log("Web Audio not supported"); audioEnabled = false; }
+        }
+
+        function playBeep(frequency, duration, volume = 0.3) {
+            if (!audioEnabled || !audioContext) return;
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = frequency;
+                gainNode.gain.value = volume;
+                oscillator.type = "sine";
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) { }
+        }
+
+        function playShoot() { playBeep(880, 0.1, 0.15); }
+        function playHit() { playBeep(440, 0.15, 0.2); }
+        function playPickup() { playBeep(660, 0.08, 0.12); playBeep(880, 0.08, 0.12); }
+        function playKill() { playBeep(550, 0.1, 0.2); playBeep(440, 0.15, 0.15); }
+        function playGameEnd() { playBeep(330, 0.3, 0.2); playBeep(220, 0.5, 0.2); }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled && !audioContext) initAudio();
+            const btns = document.querySelectorAll("#menuBox .btn-gray");
+            btns.forEach(btn => {
+                if (btn.textContent.includes("Sound")) {
+                    btn.textContent = audioEnabled ? "🔊 Sound On" : "🔇 Sound Off";
+                }
+            });
+        }
+
+        // =================== SOCIAL FUNCTIONS ===================
+        function checkBadges(player) {
+            let earned = [];
+
+            if (player.kills === 1 && Object.values(players).filter(p => p.kills > 0).length === 1) {
+                earned.push("firstblood");
+                sysChat(`🏅 ${player.name} earned: FIRST BLOOD!`);
+            }
+
+            let totalKills = (matchHistory.reduce((sum, m) => sum + (m.playerStats?.[player.id]?.kills || 0), 0) + player.kills);
+            if (totalKills >= 10 && !badges[player.id]?.includes("veteran")) {
+                earned.push("veteran");
+                sysChat(`⭐ ${player.name} is a VETERAN!`);
+            }
+
+            if (player.kills >= 5 && !badges[player.id]?.includes("dominator")) {
+                earned.push("dominator");
+                sysChat(`💀 ${player.name} is DOMINATING!`);
+            }
+
+            if (earned.length) {
+                if (!badges[player.id]) badges[player.id] = [];
+                badges[player.id].push(...earned);
+            }
+        }
+
+        function showHistory() {
+            if (matchHistory.length === 0) {
+                alert("No matches played yet!");
+                return;
+            }
+            let historyText = "📜 LAST 3 MATCHES:\n\n";
+            matchHistory.forEach((m, i) => {
+                let date = new Date(m.timestamp).toLocaleTimeString();
+                historyText += `${i + 1}. ${date} - Winner: ${m.winner}\n`;
+                historyText += `   You: ${m.myScore} pts (${m.myKills}K/${m.myDeaths}D)\n`;
+                historyText += `   Top: ${Object.entries(m.playerStats).slice(0, 3).map(([n, s]) => `${n}(${s.kills}K)`).join(", ")}\n\n`;
+            });
+            alert(historyText);
+        }
+
+        function sendChat() {
+            let text = prompt("Chat message:");
+            if (text && text.trim()) {
+                addChat(myName, text.trim(), myP?.color);
+                send({ type: "chat", name: myName, text: text.trim(), color: myP?.color });
+            }
+        }
 
         // =================== SUPABASE REALTIME CHANNEL ===================
         function joinChannel(code) {
-            // Leave old channel if exists
             if (channel) {
                 sb.removeChannel(channel);
                 channel = null;
             }
 
+            channelReady = false;
+            console.log("🔌 Joining channel: arena_" + code);
+
             channel = sb.channel('arena_' + code, {
                 config: {
-                    broadcast: { self: false } // Don't receive own messages
+                    broadcast: { self: false }
                 }
             });
 
-            // Listen for all messages
             channel.on('broadcast', { event: 'msg' }, (payload) => {
+                console.log("📨 Received:", payload.payload.type);
                 onMsg(payload.payload);
             });
 
             channel.subscribe((status) => {
+                console.log("📡 Status:", status);
                 if (status === 'SUBSCRIBED') {
+                    channelReady = true;
                     console.log("✅ Joined room: " + code);
                     document.getElementById("connStatus").style.display = "none";
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error("❌ Failed to join room");
+                    document.getElementById("connStatus").innerHTML = '<span style="color:red">Connection failed! Refresh and try again.</span>';
                 }
             });
         }
 
         function send(data) {
-            if (!channel) return;
+            if (!channel || !channelReady) {
+                console.warn("⚠️ Channel not ready, cannot send:", data.type);
+                return;
+            }
+            console.log("📤 Sending:", data.type);
             channel.send({
                 type: 'broadcast',
                 event: 'msg',
                 payload: { ...data, sid: myId }
-            });
+            }).catch(err => console.error("Send error:", err));
         }
 
         // =================== ROOM SYSTEM ===================
@@ -342,14 +496,21 @@
             roomCode = mkCode();
             isHost = true;
 
+            console.log("🏠 Creating room:", roomCode);
+
             document.getElementById("connStatus").style.display = "block";
             document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Creating room...';
 
             joinChannel(roomCode);
 
             setTimeout(() => {
-                enterLobby();
-            }, 1000);
+                if (channelReady) {
+                    enterLobby();
+                } else {
+                    console.log("Waiting for channel...");
+                    setTimeout(() => enterLobby(), 1000);
+                }
+            }, 1500);
         }
 
         function joinRoom() {
@@ -359,13 +520,19 @@
             roomCode = c;
             isHost = false;
 
+            console.log("🚪 Joining room:", roomCode);
+
             document.getElementById("connStatus").style.display = "block";
             document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Joining room...';
 
             joinChannel(roomCode);
 
             setTimeout(() => {
-                enterLobby();
+                if (channelReady) {
+                    enterLobby();
+                } else {
+                    setTimeout(() => enterLobby(), 1000);
+                }
             }, 1500);
         }
 
@@ -375,7 +542,6 @@
             document.getElementById("connStatus").style.display = "none";
             document.getElementById("codeShow").textContent = roomCode;
 
-            // Show/hide buttons based on host
             if (isHost) {
                 document.getElementById("startBtn").style.display = "block";
                 document.getElementById("waitBtn").style.display = "none";
@@ -384,7 +550,7 @@
                 document.getElementById("waitBtn").style.display = "block";
             }
 
-            let ci = 0;
+            let ci = Object.keys(players).length % COLORS.length;
             players[myId] = {
                 id: myId, name: myName, color: COLORS[ci],
                 x: 400, y: 300, vx: 0, vy: 0,
@@ -394,8 +560,10 @@
             };
             myP = players[myId];
 
-            // Tell others I joined
-            send({ type: "join", id: myId, name: myName, isHost });
+            setTimeout(() => {
+                send({ type: "join", id: myId, name: myName, isHost });
+                console.log("📢 Sent join message");
+            }, 500);
 
             refreshLobby();
         }
@@ -411,25 +579,30 @@
             let el = document.getElementById("pList");
             el.innerHTML = "";
             let ps = Object.values(players);
+            console.log("🔄 Refreshing lobby, players:", ps.length);
             ps.forEach(p => {
                 let d = document.createElement("div");
                 d.className = "pi";
+                let badgeHtml = "";
+                if (badges[p.id]) {
+                    badgeHtml = `<span style="font-size:10px;margin-left:5px">${badges[p.id].map(b => playerTitles[b]).join(" ")}</span>`;
+                }
                 d.innerHTML = `<div class="pdot" style="background:${p.color}"></div>
-            <span>${p.name}${p.isHost ? " 👑" : ""}</span>
-            <span style="margin-left:auto;font-size:11px">
-                ${p.id === myId ? "(you)" : ""}
-                ❤️❤️❤️
-            </span>`;
+                    <span>${p.name}${p.isHost ? " 👑" : ""}${badgeHtml}</span>
+                    <span style="margin-left:auto;font-size:11px">
+                        ${p.id === myId ? "(you)" : ""}
+                        ❤️❤️❤️
+                    </span>`;
                 el.appendChild(d);
             });
             let n = ps.length;
-            document.getElementById("waitMsg").textContent =
-                n >= 2 ? `${n} players ready!` : `Waiting for players... (${n}/8)`;
+            document.getElementById("waitMsg").textContent = n >= 2 ? `${n} players ready!` : `Waiting for players... (${n}/8)`;
         }
 
         // =================== MESSAGES ===================
         function onMsg(d) {
             if (d.sid === myId) return;
+            console.log("Processing:", d.type);
 
             if (d.type === "join") {
                 let ci = Object.keys(players).length % COLORS.length;
@@ -441,13 +614,13 @@
                         score: 0, kills: 0, deaths: 0,
                         angle: 0, alive: true, isHost: d.isHost
                     };
+                    console.log("➕ Player joined:", d.name);
                 }
                 refreshLobby();
-                // Reply with my info
                 send({
                     type: "info", id: myId, name: myName, isHost,
                     score: myP?.score || 0, kills: myP?.kills || 0,
-                    lives: myP?.lives || MAX_LIVES, hp: myP?.hp || MAX_HP
+                    deaths: myP?.deaths || 0, lives: myP?.lives || MAX_LIVES, hp: myP?.hp || MAX_HP
                 });
                 sysChat("⚡ " + d.name + " joined!");
             }
@@ -458,11 +631,11 @@
                         id: d.id, name: d.name, color: COLORS[ci],
                         x: 300, y: 200, vx: 0, vy: 0,
                         hp: d.hp, lives: d.lives, score: d.score,
-                        kills: d.kills, deaths: 0, angle: 0,
+                        kills: d.kills, deaths: d.deaths || 0, angle: 0,
                         alive: true, isHost: d.isHost
                     };
+                    refreshLobby();
                 }
-                refreshLobby();
             }
             else if (d.type === "start") {
                 doStartGame();
@@ -472,7 +645,7 @@
                 if (p) {
                     p.x = d.x; p.y = d.y; p.vx = d.vx; p.vy = d.vy;
                     p.angle = d.angle; p.hp = d.hp; p.lives = d.lives;
-                    p.score = d.score; p.kills = d.kills; p.alive = d.alive;
+                    p.score = d.score; p.kills = d.kills; p.deaths = d.deaths; p.alive = d.alive;
                 }
             }
             else if (d.type === "bullet") {
@@ -485,18 +658,18 @@
                 }
             }
             else if (d.type === "gotHit") {
-                // Someone's bullet hit ME!
                 if (d.targetId === myId && myP && myP.alive) {
                     if (spawnShield > 0 || shieldOn) return;
 
                     let dmg = d.damage || BULLET_DMG;
                     myP.hp -= dmg;
                     shakeAmt = 8;
+                    hitFlash = 12;
+                    hitMarker = 8;
+                    if (d.shooterId !== myId) playHit();
 
-                    // Damage text
                     addPart(myP.x, myP.y - 30, 0, -1.5, "#e74c3c", 0, 40, "dmgtext");
 
-                    // Blood
                     let n = Math.min(5, MAX_PARTS - particles.length);
                     for (let j = 0; j < n; j++) {
                         let a = Math.random() * Math.PI * 2;
@@ -509,7 +682,6 @@
                         myP.lives--;
                         myP.deaths = (myP.deaths || 0) + 1;
 
-                        // Death explosion
                         let n2 = Math.min(10, MAX_PARTS - particles.length);
                         for (let j = 0; j < n2; j++) {
                             let a = Math.random() * Math.PI * 2;
@@ -569,6 +741,13 @@
                     refreshLobby();
                 }
             }
+            else if (d.type === "emote") {
+                addChat(d.name, d.emote, d.color);
+                let p = players[d.id];
+                if (p) {
+                    streakEffects.push({ x: p.x, y: p.y - 40, text: d.emote, color: d.color, life: 30 });
+                }
+            }
         }
 
         // =================== START GAME ===================
@@ -597,11 +776,9 @@
                 p.alive = true; p.score = 0; p.kills = 0; p.deaths = 0;
             });
 
-            // Only host runs the timer
             if (isHost) {
                 timerInt = setInterval(() => {
                     gameTimer--;
-                    // Send timer every 2 seconds (reduce network load)
                     if (gameTimer % 2 === 0) send({ type: "tick", t: gameTimer });
                     if (gameTimer > 0 && gameTimer % 12 === 0) spawnItem();
                     if (gameTimer <= 0) {
@@ -634,39 +811,13 @@
             send({ type: "item", it });
         }
 
-        // =================== HELPERS ===================
-        function addPart(x, y, vx, vy, color, size, life, type) {
-            if (particles.length >= MAX_PARTS) return;
-            particles.push({ x, y, vx, vy, color, size, life, maxLife: life, type: type || "dot" });
-        }
-
-        function addKF(k, v, c) {
-            killFeed.unshift({ k, v, c, t: 160 });
-            if (killFeed.length > 4) killFeed.pop();
-        }
-
         function applyItem(type) {
+            playPickup();
             if (!myP) return;
             if (type === "health") { myP.hp = Math.min(MAX_HP, myP.hp + 40); sysChat("❤️ +40 HP!") }
             else if (type === "speed") { speedUp = 360; sysChat("⚡ Speed 6s!") }
             else if (type === "shield") { shieldOn = true; shieldT = 300; sysChat("🛡️ Shield 5s!") }
             else if (type === "dmg") { dmgUp = 360; sysChat("💥 2x Damage 6s!") }
-        }
-
-        function addChat(name, text, color) {
-            // Simple on-screen chat stored in array
-            killFeed.push({ k: name, v: text, c: color || "#fff", t: 200, isChat: true });
-            if (killFeed.length > 6) killFeed.shift();
-        }
-
-        function sysChat(t) { addChat("•", t, "#aaa") }
-
-        function sendChat() {
-            let text = prompt("Chat message:");
-            if (text && text.trim()) {
-                addChat(myName, text.trim(), myP?.color);
-                send({ type: "chat", name: myName, text: text.trim(), color: myP?.color });
-            }
         }
 
         // =================== CHECK LAST PLAYER STANDING ===================
@@ -685,13 +836,12 @@
                         name: p.name, score: p.score, kills: p.kills,
                         deaths: p.deaths || 0, color: p.color
                     }));
-                    // EVERY player sends game over (not just host)
-                    // This ensures ALL players see the scoreboard
                     send({ type: "over", scores });
                     endGame(scores);
                 }, 1500);
             }
         }
+
         // =================== GAME LOOP ===================
         let lastT = 0;
         function gameLoop(ts) {
@@ -747,7 +897,14 @@
                 myP.y = Math.max(70, Math.min(canvas.height - 50, myP.y + myP.vy));
                 myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
 
-                // Send position every 4 frames (15fps network update)
+                // Trail recording
+                if (frame % 5 === 0 && (Math.abs(myP.x - lastX) > 5 || Math.abs(myP.y - lastY) > 5)) {
+                    trailParticles.push({ x: myP.x, y: myP.y, life: 15, color: myP.color });
+                    lastX = myP.x; lastY = myP.y;
+                }
+                if (trailParticles.length > 30) trailParticles.shift();
+
+                // Send position
                 if (frame % 4 === 0) {
                     send({
                         type: "pos", id: myId,
@@ -756,7 +913,7 @@
                         vy: Math.round(myP.vy * 100) / 100,
                         angle: Math.round(myP.angle * 100) / 100,
                         hp: myP.hp, lives: myP.lives,
-                        score: myP.score, kills: myP.kills, alive: myP.alive
+                        score: myP.score, kills: myP.kills, deaths: myP.deaths, alive: myP.alive
                     });
                 }
 
@@ -772,7 +929,7 @@
                 }
             }
 
-            // ===== ITEMS =====
+            // Items
             items.forEach(it => {
                 it.pulse += 0.05;
                 let cols = { health: "#e74c3c", speed: "#f39c12", shield: "#3498db", dmg: "#9b59b6" };
@@ -789,7 +946,7 @@
                 ctx.fillText(icons[it.type] || "?", it.x, it.y + 5);
             });
 
-            // ===== PLAYERS =====
+            // Players
             Object.values(players).forEach(p => {
                 if (!p.alive) {
                     ctx.globalAlpha = 0.25; ctx.font = "22px Arial"; ctx.textAlign = "center";
@@ -799,7 +956,6 @@
 
                 let isMe = p.id === myId;
 
-                // Spawn shield
                 if (isMe && spawnShield > 0) {
                     ctx.globalAlpha = 0.25 + Math.sin(frame * 0.2) * 0.15;
                     ctx.beginPath(); ctx.arc(p.x, p.y, 28, 0, Math.PI * 2);
@@ -808,7 +964,6 @@
                     ctx.globalAlpha = 1;
                 }
 
-                // Shield
                 if (isMe && shieldOn) {
                     ctx.globalAlpha = 0.4 + Math.sin(frame * 0.15) * 0.2;
                     ctx.beginPath(); ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
@@ -816,11 +971,9 @@
                     ctx.globalAlpha = 1;
                 }
 
-                // Shadow
                 ctx.fillStyle = "rgba(0,0,0,0.25)";
                 ctx.beginPath(); ctx.ellipse(p.x, p.y + 19, 14, 5, 0, 0, Math.PI * 2); ctx.fill();
 
-                // Body
                 ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
                 let bg = ctx.createRadialGradient(p.x - 3, p.y - 3, 3, p.x, p.y, 18);
                 bg.addColorStop(0, p.color); bg.addColorStop(1, p.color + "88");
@@ -828,13 +981,11 @@
                 ctx.strokeStyle = isMe ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)";
                 ctx.lineWidth = isMe ? 2.5 : 1.5; ctx.stroke();
 
-                // Gun
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
                 ctx.fillStyle = "#444"; ctx.fillRect(8, -5, 22, 10);
                 ctx.fillStyle = p.color; ctx.fillRect(8, -3, 20, 6);
                 ctx.restore();
 
-                // Eyes
                 ctx.fillStyle = "white";
                 ctx.beginPath(); ctx.arc(p.x - 5, p.y - 3, 3, 0, Math.PI * 2); ctx.fill();
                 ctx.beginPath(); ctx.arc(p.x + 5, p.y - 3, 3, 0, Math.PI * 2); ctx.fill();
@@ -842,7 +993,6 @@
                 ctx.beginPath(); ctx.arc(p.x - 5 + Math.cos(p.angle), p.y - 3 + Math.sin(p.angle), 1.5, 0, Math.PI * 2); ctx.fill();
                 ctx.beginPath(); ctx.arc(p.x + 5 + Math.cos(p.angle), p.y - 3 + Math.sin(p.angle), 1.5, 0, Math.PI * 2); ctx.fill();
 
-                // Name
                 ctx.fillStyle = "rgba(0,0,0,0.75)";
                 let nw = ctx.measureText(p.name).width + 12;
                 ctx.beginPath(); ctx.roundRect(p.x - nw / 2, p.y - 44, nw, 17, 4); ctx.fill();
@@ -850,7 +1000,6 @@
                 ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
                 ctx.fillText(p.name, p.x, p.y - 30);
 
-                // HP bar
                 let bw = 40;
                 ctx.fillStyle = "rgba(0,0,0,0.6)";
                 ctx.beginPath(); ctx.roundRect(p.x - bw / 2, p.y - 53, bw, 5, 2); ctx.fill();
@@ -860,17 +1009,14 @@
                     ctx.beginPath(); ctx.roundRect(p.x - bw / 2, p.y - 53, bw * hpPct, 5, 2); ctx.fill();
                 }
 
-                // HP text
                 ctx.fillStyle = "white"; ctx.font = "7px Arial";
                 ctx.fillText(p.hp, p.x, p.y - 50);
 
-                // Lives
                 ctx.font = "10px Arial";
                 for (let i = 0; i < MAX_LIVES; i++) {
                     ctx.fillText(i < p.lives ? "❤️" : "🖤", p.x - 12 + i * 12, p.y - 58);
                 }
 
-                // Score
                 if (p.score > 0) {
                     ctx.fillStyle = p.color + "dd";
                     ctx.beginPath(); ctx.arc(p.x + 20, p.y - 18, 11, 0, Math.PI * 2); ctx.fill();
@@ -879,7 +1025,7 @@
                 }
             });
 
-            // ===== BULLETS =====
+            // Bullets
             let newBullets = [];
             for (let i = 0; i < bullets.length; i++) {
                 let b = bullets[i];
@@ -888,14 +1034,12 @@
                 if (b.x < 20 || b.x > canvas.width - 20 || b.y < 20 || b.y > canvas.height - 20 || b.life <= 0)
                     continue;
 
-                // Draw
                 ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
                 ctx.fillStyle = b.color || b.ocolor || "#fff"; ctx.fill();
                 ctx.shadowColor = b.color || b.ocolor; ctx.shadowBlur = 6; ctx.fill(); ctx.shadowBlur = 0;
 
                 let hitSomething = false;
 
-                // MY bullet hitting OTHER players
                 if (b.oid === myId) {
                     for (let pid in players) {
                         if (pid === myId) continue;
@@ -909,14 +1053,12 @@
 
                             addPart(myP.x, myP.y - 25, 0, -1, "#f1c40f", 0, 35, "score");
 
-                            // Blood
                             let n = Math.min(5, MAX_PARTS - particles.length);
                             for (let j = 0; j < n; j++) {
                                 let a = Math.random() * Math.PI * 2;
                                 addPart(b.x, b.y, Math.cos(a) * 4, Math.sin(a) * 3, "#e74c3c", 3, 20, "blood");
                             }
 
-                            // Tell the other player they got hit!
                             send({
                                 type: "gotHit",
                                 targetId: pid,
@@ -927,7 +1069,6 @@
                                 bx: b.x, by: b.y
                             });
 
-                            // Update other player's HP locally
                             p.hp = Math.max(0, p.hp - (b.dmg || BULLET_DMG));
 
                             if (p.hp <= 0) {
@@ -935,6 +1076,14 @@
                                 p.lives--;
                                 myP.score += 20;
                                 myP.kills++;
+
+                                if (myP.kills % 3 === 0 && myP.kills > 0) {
+                                    addStreakEffect(myP.x, myP.y - 50, `${myP.kills} KILL STREAK!`, "#f1c40f");
+                                    sysChat(`🔥 ${myName} is on a ${myP.kills} kill streak!`);
+                                }
+                                playKill();
+                                checkBadges(myP);
+
                                 addPart(myP.x, myP.y - 40, 0, -1, "#2ecc71", 0, 50, "killtext");
                                 addKF(myName, p.name, myP.color);
 
@@ -956,7 +1105,7 @@
             }
             bullets = newBullets;
 
-            // ===== PARTICLES =====
+            // Particles
             let newParts = [];
             for (let i = 0; i < particles.length; i++) {
                 let p = particles[i];
@@ -978,11 +1127,60 @@
 
             ctx.restore();
 
-            // ===== HUD =====
+            // Visual Effects
+            if (hitFlash > 0) {
+                ctx.fillStyle = `rgba(255, 0, 0, ${hitFlash / 15})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                hitFlash--;
+            }
+
+            if (hitMarker > 0) {
+                let cx = canvas.width / 2, cy = canvas.height / 2;
+                let alpha = hitMarker / 8;
+                ctx.beginPath();
+                ctx.moveTo(cx - 15, cy - 15);
+                ctx.lineTo(cx - 8, cy - 8);
+                ctx.moveTo(cx + 15, cy - 15);
+                ctx.lineTo(cx + 8, cy - 8);
+                ctx.moveTo(cx - 15, cy + 15);
+                ctx.lineTo(cx - 8, cy + 8);
+                ctx.moveTo(cx + 15, cy + 15);
+                ctx.lineTo(cx + 8, cy + 8);
+                ctx.strokeStyle = `rgba(255, 50, 50, ${alpha})`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                hitMarker--;
+            }
+
+            trailParticles.forEach((t) => {
+                ctx.globalAlpha = t.life / 15;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = t.color + "88";
+                ctx.fill();
+                t.life--;
+                ctx.globalAlpha = 1;
+            });
+            trailParticles = trailParticles.filter(t => t.life > 0);
+
+            streakEffects.forEach((s) => {
+                ctx.globalAlpha = s.life / 40;
+                ctx.font = `bold ${Math.floor(16 + (40 - s.life) / 4)}px Arial`;
+                ctx.textAlign = "center";
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "#f1c40f";
+                ctx.fillStyle = s.color;
+                ctx.fillText(s.text, s.x, s.y - (40 - s.life));
+                s.life--;
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+            });
+            streakEffects = streakEffects.filter(s => s.life > 0);
+
+            // HUD
             ctx.fillStyle = "rgba(0,0,10,0.8)"; ctx.fillRect(0, 0, canvas.width, 52);
             ctx.fillStyle = "rgba(241,196,15,0.25)"; ctx.fillRect(0, 51, canvas.width, 1);
 
-            // Timer
             let mins = Math.floor(gameTimer / 60), secs = gameTimer % 60;
             let tStr = mins + ":" + (secs < 10 ? "0" : "") + secs;
             let isLow = gameTimer <= 30;
@@ -990,7 +1188,6 @@
             ctx.fillStyle = isLow ? (frame % 20 < 10 ? "#ff4444" : "#e74c3c") : "#f1c40f";
             ctx.fillText("⏱ " + tStr, canvas.width / 2, 38);
 
-            // My stats
             if (myP) {
                 ctx.textAlign = "left"; ctx.font = "bold 13px Arial";
                 ctx.fillStyle = "#fff"; ctx.fillText("Score:", 12, 20);
@@ -1012,7 +1209,6 @@
                 ctx.fillText(myP.hp + "/" + MAX_HP, hx + hw / 2, hy + 11);
             }
 
-            // Leaderboard
             let sorted = Object.values(players).sort((a, b) => b.score - a.score);
             let medals = ["🥇", "🥈", "🥉", "4️⃣"];
             ctx.textAlign = "right"; ctx.font = "bold 12px Arial";
@@ -1021,7 +1217,6 @@
                 ctx.fillText(medals[i] + " " + p.name + ": " + p.score, canvas.width - 12, 16 + i * 16);
             });
 
-            // Kill feed / chat
             let feedY = 60;
             killFeed.forEach((kf, i) => {
                 if (kf.t > 0) {
@@ -1040,14 +1235,12 @@
             });
             killFeed = killFeed.filter(kf => kf.t > 0);
 
-            // Powerup indicators
             let pyInd = canvas.height - 12;
             ctx.textAlign = "left"; ctx.font = "bold 11px Arial";
             if (speedUp > 0) { ctx.fillStyle = "#f39c12"; ctx.fillText("⚡ Speed " + (Math.ceil(speedUp / 60)) + "s", 12, pyInd); pyInd -= 18 }
             if (shieldOn) { ctx.fillStyle = "#3498db"; ctx.fillText("🛡️ Shield " + (Math.ceil(shieldT / 60)) + "s", 12, pyInd); pyInd -= 18 }
             if (dmgUp > 0) { ctx.fillStyle = "#9b59b6"; ctx.fillText("💥 2x DMG " + (Math.ceil(dmgUp / 60)) + "s", 12, pyInd) }
 
-            // Dead message
             if (myP && !myP.alive) {
                 ctx.fillStyle = "rgba(0,0,0,0.6)";
                 ctx.beginPath(); ctx.roundRect(canvas.width / 2 - 120, canvas.height / 2 - 22, 240, 44, 10); ctx.fill();
@@ -1056,9 +1249,8 @@
                 else { ctx.fillStyle = "#e74c3c"; ctx.fillText("☠️ Spectating...", canvas.width / 2, canvas.height / 2 + 6) }
             }
 
-            // Chat button hint
             ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.font = "10px Arial"; ctx.textAlign = "center";
-            ctx.fillText("WASD=Move | Click=Shoot | T=Chat", canvas.width / 2, canvas.height - 6);
+            ctx.fillText("WASD=Move | Click=Shoot | T=Chat | 1-6=Emotes", canvas.width / 2, canvas.height - 6);
 
             requestAnimationFrame(gameLoop);
         }
@@ -1066,6 +1258,11 @@
         // =================== SHOOTING ===================
         canvas.addEventListener("click", e => {
             if (!myP || !myP.alive || !gameOn || shootCD > 0) return;
+
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
             let angle = Math.atan2(e.clientY - myP.y, e.clientX - myP.x);
             let dmg = dmgUp > 0 ? 40 : BULLET_DMG;
 
@@ -1083,6 +1280,8 @@
                 send({ type: "bullet", ...b });
             }
 
+            playShoot();
+
             let n = Math.min(3, MAX_PARTS - particles.length);
             for (let i = 0; i < n; i++) {
                 let a = angle + (Math.random() - 0.5) * 0.6;
@@ -1091,7 +1290,6 @@
             shootCD = 10;
         });
 
-        // Hold to shoot
         let mouseDown = false;
         canvas.addEventListener("mousedown", () => mouseDown = true);
         canvas.addEventListener("mouseup", () => mouseDown = false);
@@ -1106,7 +1304,6 @@
             if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
         });
 
-        // Touch
         canvas.addEventListener("touchmove", e => {
             e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY;
             if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
@@ -1120,13 +1317,37 @@
 
         window.addEventListener("keydown", e => {
             keys[e.key] = true;
-            if (e.key === "t" || e.key === "T") { if (gameOn) sendChat() }
+            if (e.key === "t" || e.key === "T") { if (gameOn) sendChat(); }
+
+            if (e.key >= '1' && e.key <= '6' && gameOn && myP && myP.alive && emoteCooldown <= 0) {
+                let emote = emotes[parseInt(e.key) - 1];
+                send({ type: "emote", id: myId, emote: emote, name: myName, color: myP.color });
+                emoteCooldown = 60;
+                sysChat(`${myName}: ${emote}`);
+            }
+            if (emoteCooldown > 0) emoteCooldown--;
         });
         window.addEventListener("keyup", e => keys[e.key] = false);
         window.addEventListener("beforeunload", () => send({ type: "leave", id: myId }));
 
         // =================== END GAME ===================
         function endGame(scores) {
+            playGameEnd();
+
+            let matchRecord = {
+                timestamp: Date.now(),
+                winner: scores[0]?.name || "Nobody",
+                myScore: myP?.score || 0,
+                myKills: myP?.kills || 0,
+                myDeaths: myP?.deaths || 0,
+                playerStats: {}
+            };
+            scores.forEach(s => { matchRecord.playerStats[s.name] = { score: s.score, kills: s.kills }; });
+            matchHistory.unshift(matchRecord);
+            if (matchHistory.length > 3) matchHistory.pop();
+            localStorage.setItem("matchHistory", JSON.stringify(matchHistory));
+            localStorage.setItem("badges", JSON.stringify(badges));
+
             gameOn = false;
             if (timerInt) clearInterval(timerInt);
 
@@ -1156,20 +1377,20 @@
             scores.forEach((s, i) => {
                 let isMine = s.name === myName;
                 html += `<div style="display:flex;justify-content:space-between;align-items:center;
-            padding:9px 12px;margin-bottom:5px;border-radius:8px;
-            background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};
-            border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};
-            color:white;font-size:13px">
-            <div>
-                <span style="font-size:15px">${m[i] || "•"}</span>
-                <span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>
-                ${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
-            </div>
-            <div style="text-align:right">
-                <div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
-                <div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
-            </div>
-        </div>`;
+                    padding:9px 12px;margin-bottom:5px;border-radius:8px;
+                    background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};
+                    border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};
+                    color:white;font-size:13px">
+                    <div>
+                        <span style="font-size:15px">${m[i] || "•"}</span>
+                        <span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>
+                        ${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
+                    </div>
+                    <div style="text-align:right">
+                        <div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
+                        <div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
+                    </div>
+                </div>`;
             });
             document.getElementById("finalList").innerHTML = html;
         }
@@ -1192,6 +1413,8 @@
             }
             refreshLobby();
         }
+
+        initAudio();
     </script>
 </body>
 
