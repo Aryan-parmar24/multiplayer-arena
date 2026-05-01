@@ -348,6 +348,7 @@
             "dominator": "💀 Dominator",
             "survivor": "🛡️ Survivor"
         };
+        let dashCooldown = 0;
 
         // Load saved data
         let savedHistory = localStorage.getItem("matchHistory");
@@ -1158,7 +1159,7 @@ ${p.id === myId ? "(you)" : ""}
             if (shieldT > 0) { shieldT--; if (shieldT <= 0) shieldOn = false }
             if (dmgUp > 0) dmgUp--;
             if (shootCD > 0) shootCD--;
-
+            if (dashCooldown > 0) dashCooldown--;
             // My movement
             if (myP && myP.alive) {
                 let spd = speedUp > 0 ? 7 : PLAYER_SPD;
@@ -1356,7 +1357,19 @@ ${p.id === myId ? "(you)" : ""}
                         let dx = b.x - p.x, dy = b.y - p.y;
                         if (Math.sqrt(dx * dx + dy * dy) < 22) {
                             hitSomething = true;
-                            myP.score += 5;
+
+                            // HEADSHOT DETECTION
+                            let isHeadshot = (b.y - p.y) < -15;
+                            let damage = (b.dmg || BULLET_DMG) * (isHeadshot ? 2 : 1);
+
+                            if (isHeadshot) {
+                                myP.score += 15;
+                                addPart(p.x, p.y - 25, 0, -2, "#ffaa00", 0, 40, "headshot");
+                                sysChat(`🎯 HEADSHOT! +10 bonus!`);
+                                addKF(myName, p.name + " 💀 HEADSHOT!", myP.color);
+                            } else {
+                                myP.score += 5;
+                            }
 
                             addPart(myP.x, myP.y - 25, 0, -1, "#f1c40f", 0, 35, "score");
 
@@ -1369,7 +1382,7 @@ ${p.id === myId ? "(you)" : ""}
                             send({
                                 type: "gotHit",
                                 targetId: pid,
-                                damage: b.dmg || BULLET_DMG,
+                                damage: damage,
                                 shooterId: myId,
                                 shooterName: myName,
                                 shooterColor: myP.color,
@@ -1383,6 +1396,11 @@ ${p.id === myId ? "(you)" : ""}
                                 p.lives--;
                                 myP.score += 20;
                                 myP.kills++;
+
+                                // HEALTH ON KILL
+                                myP.hp = Math.min(MAX_HP, myP.hp + 20);
+                                addPart(myP.x, myP.y - 30, 0, -2, "#2ecc71", 0, 40, "heal");
+                                sysChat(`💚 +20 HP for killing ${p.name}!`);
 
                                 if (myP.kills % 3 === 0 && myP.kills > 0) {
                                     addStreakEffect(myP.x, myP.y - 50, `${myP.kills} KILL STREAK!`, "#f1c40f");
@@ -1425,6 +1443,17 @@ ${p.id === myId ? "(you)" : ""}
                 if (p.type === "score") { ctx.fillStyle = "#f1c40f"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("+5", p.x, p.y) }
                 else if (p.type === "killtext") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.fillText("☠ KILL +20", p.x, p.y) }
                 else if (p.type === "dmgtext") { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("-" + BULLET_DMG, p.x, p.y) }
+                else if (p.type === "headshot") { ctx.fillStyle = "#ffaa00"; ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.fillText("HEADSHOT!", p.x, p.y) }
+                else if (p.type === "heal") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("+20 HP", p.x, p.y) }
+                else if (p.type === "dash") {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "#3498db";
+                    ctx.font = "bold 12px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText("💨", p.x, p.y);
+                    ctx.shadowBlur = 0;
+                }
                 else { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.size * alpha), 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill() }
                 ctx.globalAlpha = 1;
 
@@ -1547,7 +1576,16 @@ ${p.id === myId ? "(you)" : ""}
             if (speedUp > 0) { ctx.fillStyle = "#f39c12"; ctx.fillText("⚡ Speed " + (Math.ceil(speedUp / 60)) + "s", 12, pyInd); pyInd -= 18 }
             if (shieldOn) { ctx.fillStyle = "#3498db"; ctx.fillText("🛡️ Shield " + (Math.ceil(shieldT / 60)) + "s", 12, pyInd); pyInd -= 18 }
             if (dmgUp > 0) { ctx.fillStyle = "#9b59b6"; ctx.fillText("💥 2x DMG " + (Math.ceil(dmgUp / 60)) + "s", 12, pyInd) }
-
+            // Dash cooldown indicator
+            if (dashCooldown > 0) {
+                ctx.fillStyle = "rgba(52,152,219,0.3)";
+                ctx.fillRect(12, canvas.height - 42, 60, 8);
+                ctx.fillStyle = "#3498db";
+                ctx.fillRect(12, canvas.height - 42, 60 * (1 - dashCooldown / 60), 8);
+                ctx.fillStyle = "white";
+                ctx.font = "9px Arial";
+                ctx.fillText("⚡ DASH", 12, canvas.height - 45);
+            }
             if (myP && !myP.alive) {
                 ctx.fillStyle = "rgba(0,0,0,0.6)";
                 ctx.beginPath(); ctx.roundRect(canvas.width / 2 - 120, canvas.height / 2 - 22, 240, 44, 10); ctx.fill();
@@ -1557,7 +1595,7 @@ ${p.id === myId ? "(you)" : ""}
             }
 
             ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.font = "10px Arial"; ctx.textAlign = "center";
-            ctx.fillText("WASD=Move | Click=Shoot | T=Chat | 1-6=Emotes", canvas.width / 2, canvas.height - 6);
+            ctx.fillText("WASD=Move | Click=Shoot | SPACE=Dash | T=Chat | 1-6=Emotes", canvas.width / 2, canvas.height - 6);
 
             requestAnimationFrame(gameLoop);
         }
@@ -1633,6 +1671,19 @@ ${p.id === myId ? "(you)" : ""}
                 sysChat(`${myName}: ${emote}`);
             }
             if (emoteCooldown > 0) emoteCooldown--;
+            // DASH/JUMP on Space bar
+            if (e.key === " " || e.key === "Space" || e.key === "Spacebar") {
+                e.preventDefault();
+                if (myP && myP.alive && gameOn && dashCooldown <= 0) {
+                    let dashSpeed = 12;
+                    myP.vx += Math.cos(myP.angle) * dashSpeed;
+                    myP.vy += Math.sin(myP.angle) * dashSpeed;
+                    dashCooldown = 60; // 1 second cooldown (60 frames)
+                    addPart(myP.x, myP.y, 0, 0, "#ffffff", 8, 10, "dash");
+                    playShoot(); // reuse shoot sound for dash
+                    sysChat("💨 DASH!");
+                }
+            }
         });
         window.addEventListener("keyup", e => keys[e.key] = false);
         window.addEventListener("beforeunload", () => send({ type: "leave", id: myId }));
