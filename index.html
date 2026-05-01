@@ -1,1000 +1,1220 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Multiplayer Arena</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a1a;overflow:hidden;font-family:Arial}
-canvas{display:block}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#050510,#1a1a3a);display:flex;align-items:center;justify-content:center;z-index:100}
-.box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:28px;width:min(400px,92vw);backdrop-filter:blur(10px)}
-.title{color:#f1c40f;font-size:26px;font-weight:bold;text-align:center;margin-bottom:5px}
-.sub{color:#aaa;font-size:12px;text-align:center;margin-bottom:20px}
-input{width:100%;padding:12px 15px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:white;font-size:15px;margin-bottom:10px;outline:none;box-sizing:border-box}
-input:focus{border-color:#f1c40f}
-input::placeholder{color:#555}
-.btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:bold;cursor:pointer;margin-bottom:8px}
-.btn:active{opacity:0.75}
-.btn-green{background:linear-gradient(135deg,#27ae60,#1e8449);color:white}
-.btn-blue{background:linear-gradient(135deg,#3498db,#2471a3);color:white}
-.btn-purple{background:linear-gradient(135deg,#9b59b6,#8e44ad);color:white}
-.btn-red{background:linear-gradient(135deg,#e74c3c,#c0392b);color:white}
-.btn-gray{background:rgba(255,255,255,0.1);color:#888}
-.or{color:#555;text-align:center;margin:6px 0;font-size:12px}
-.room-code{background:rgba(241,196,15,0.1);border:2px solid #f1c40f;border-radius:12px;padding:12px;text-align:center;margin-bottom:12px}
-.room-code-label{color:#aaa;font-size:11px;margin-bottom:4px}
-.room-code-value{color:#f1c40f;font-size:28px;font-weight:bold;letter-spacing:8px}
-.pi{display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:5px;color:white;font-size:13px}
-.pdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.connecting{color:#f1c40f;text-align:center;font-size:14px;padding:20px}
-.spin{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,0.1);border-top-color:#f1c40f;border-radius:50%;animation:sp 0.8s linear infinite;margin-right:8px;vertical-align:middle}
-@keyframes sp{to{transform:rotate(360deg)}}
-</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Multiplayer Arena</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            background: #0a0a1a;
+            overflow: hidden;
+            font-family: Arial
+        }
+
+        canvas {
+            display: block
+        }
+
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #050510, #1a1a3a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100
+        }
+
+        .box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 28px;
+            width: min(400px, 92vw);
+            backdrop-filter: blur(10px)
+        }
+
+        .title {
+            color: #f1c40f;
+            font-size: 26px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 5px
+        }
+
+        .sub {
+            color: #aaa;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 20px
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 15px;
+            margin-bottom: 10px;
+            outline: none;
+            box-sizing: border-box
+        }
+
+        input:focus {
+            border-color: #f1c40f
+        }
+
+        input::placeholder {
+            color: #555
+        }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 8px
+        }
+
+        .btn:active {
+            opacity: 0.75
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+            color: white
+        }
+
+        .btn-blue {
+            background: linear-gradient(135deg, #3498db, #2471a3);
+            color: white
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white
+        }
+
+        .btn-gray {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888
+        }
+
+        .or {
+            color: #555;
+            text-align: center;
+            margin: 6px 0;
+            font-size: 12px
+        }
+
+        .room-code {
+            background: rgba(241, 196, 15, 0.1);
+            border: 2px solid #f1c40f;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 12px
+        }
+
+        .room-code-label {
+            color: #aaa;
+            font-size: 11px;
+            margin-bottom: 4px
+        }
+
+        .room-code-value {
+            color: #f1c40f;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 8px
+        }
+
+        .pi {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 5px;
+            color: white;
+            font-size: 13px
+        }
+
+        .pdot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .connecting {
+            color: #f1c40f;
+            text-align: center;
+            font-size: 14px;
+            padding: 20px
+        }
+
+        .spin {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #f1c40f;
+            border-radius: 50%;
+            animation: sp 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle
+        }
+
+        @keyframes sp {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+    </style>
 </head>
+
 <body>
 
-<div id="ui">
-<!-- MENU -->
-<div class="box" id="menuBox">
-    <div class="title">⚔️ Multiplayer Arena</div>
-    <div class="sub">3 Lives • 3 Min • Most Kills Wins!<br>Play with friends anywhere! 🌍</div>
-    <input id="nameInp" placeholder="Your Name" maxlength="12">
-    <button class="btn btn-green" onclick="createRoom()">🏠 Create Room</button>
-    <div class="or">— join a friend —</div>
-    <input id="codeInp" placeholder="Room Code" maxlength="6" style="text-transform:uppercase;text-align:center;letter-spacing:5px;font-size:20px">
-    <button class="btn btn-blue" onclick="joinRoom()">🚪 Join Room</button>
-    <div class="connecting" id="connStatus" style="display:none"><span class="spin"></span>Connecting...</div>
-</div>
+    <div id="ui">
+        <!-- MENU -->
+        <div class="box" id="menuBox">
+            <div class="title">⚔️ Multiplayer Arena</div>
+            <div class="sub">3 Lives • 3 Min • Most Kills Wins!<br>Play with friends anywhere! 🌍</div>
+            <input id="nameInp" placeholder="Your Name" maxlength="12">
+            <button class="btn btn-green" onclick="createRoom()">🏠 Create Room</button>
+            <div class="or">— join a friend —</div>
+            <input id="codeInp" placeholder="Room Code" maxlength="6"
+                style="text-transform:uppercase;text-align:center;letter-spacing:5px;font-size:20px">
+            <button class="btn btn-blue" onclick="joinRoom()">🚪 Join Room</button>
+            <div class="connecting" id="connStatus" style="display:none"><span class="spin"></span>Connecting...</div>
+        </div>
 
-<!-- LOBBY -->
-<div class="box" id="lobbyBox" style="display:none">
-    <div class="title">🏠 Lobby</div>
-    <div class="room-code">
-        <div class="room-code-label">Share code with friends:</div>
-        <div class="room-code-value" id="codeShow">------</div>
+        <!-- LOBBY -->
+        <div class="box" id="lobbyBox" style="display:none">
+            <div class="title">🏠 Lobby</div>
+            <div class="room-code">
+                <div class="room-code-label">Share code with friends:</div>
+                <div class="room-code-value" id="codeShow">------</div>
+            </div>
+            <div id="pList"></div>
+            <!-- Only host sees start button -->
+            <button class="btn btn-green" id="startBtn" onclick="hostStart()" style="margin-top:12px;display:none">▶
+                Start Game</button>
+            <button class="btn btn-gray" id="waitBtn" style="margin-top:12px;display:none">⏳ Waiting for host to
+                start...</button>
+            <button class="btn btn-purple" onclick="copyCode()">📋 Copy Code</button>
+            <div id="waitMsg" style="color:#aaa;font-size:11px;text-align:center;margin-top:8px"></div>
+        </div>
+
+        <!-- WINNER -->
+        <div class="box" id="winBox" style="display:none">
+            <div class="title" id="winTitle">🏆 Game Over!</div>
+            <div id="winName" style="font-size:20px;font-weight:bold;text-align:center;margin:12px 0"></div>
+            <div id="finalList" style="margin-bottom:14px"></div>
+            <button class="btn btn-green" onclick="playAgain()">🔄 Play Again</button>
+            <button class="btn btn-red" onclick="location.reload()">🏠 Main Menu</button>
+        </div>
     </div>
-    <div id="pList"></div>
-    <!-- Only host sees start button -->
-    <button class="btn btn-green" id="startBtn" onclick="hostStart()" style="margin-top:12px;display:none">▶ Start Game</button>
-    <button class="btn btn-gray" id="waitBtn" style="margin-top:12px;display:none">⏳ Waiting for host to start...</button>
-    <button class="btn btn-purple" onclick="copyCode()">📋 Copy Code</button>
-    <div id="waitMsg" style="color:#aaa;font-size:11px;text-align:center;margin-top:8px"></div>
-</div>
 
-<!-- WINNER -->
-<div class="box" id="winBox" style="display:none">
-    <div class="title" id="winTitle">🏆 Game Over!</div>
-    <div id="winName" style="font-size:20px;font-weight:bold;text-align:center;margin:12px 0"></div>
-    <div id="finalList" style="margin-bottom:14px"></div>
-    <button class="btn btn-green" onclick="playAgain()">🔄 Play Again</button>
-    <button class="btn btn-red" onclick="location.reload()">🏠 Main Menu</button>
-</div>
-</div>
+    <canvas id="game"></canvas>
 
-<canvas id="game"></canvas>
+    <script>
+        // =================== SUPABASE CONFIG ===================
+        const SB_URL = "https://rlohtodqxxgwveeahmzz.supabase.co";
+        const SB_KEY = "sb_publishable_D9MV9BJ9eFq1FEdbEu_J7g_xOEcynW8";
 
-<script>
-// =================== SUPABASE CONFIG ===================
-const SB_URL = "https://rlohtodqxxgwveeahmzz.supabase.co";
-const SB_KEY = "sb_publishable_D9MV9BJ9eFq1FEdbEu_J7g_xOEcynW8";
-
-let sb;
-try {
-    sb = window.supabase.createClient(SB_URL, SB_KEY);
-    console.log("✅ Connected to Supabase!");
-} catch(e) {
-    console.error("❌ Connection failed:", e);
-}
-
-// =================== CANVAS ===================
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-function resizeC(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
-resizeC();
-window.addEventListener("resize", resizeC);
-
-// =================== CONSTANTS ===================
-const GAME_TIME = 180;
-const MAX_LIVES = 3;
-const MAX_HP = 100;
-const BULLET_DMG = 20;
-const BULLET_SPD = 15;
-const PLAYER_SPD = 4;
-const RESPAWN_MS = 2500;
-const MAX_PARTS = 60;
-const MAX_BULLETS = 25;
-const COLORS = ["#e74c3c","#3498db","#2ecc71","#f39c12","#9b59b6","#1abc9c","#e67e22","#fd79a8"];
-
-// =================== STATE ===================
-let myId = Math.random().toString(36).substr(2,8);
-let myName = "Player";
-let roomCode = "";
-let isHost = false;
-let gameOn = false;
-let players = {};
-let myP = null;
-let frame = 0;
-let keys = {};
-let mx = 0, my2 = 0;
-let bullets = [];
-let particles = [];
-let items = [];
-let shootCD = 0;
-let gameTimer = GAME_TIME;
-let timerInt = null;
-let killFeed = [];
-let shakeAmt = 0;
-let spawnShield = 0;
-let speedUp = 0;
-let shieldOn = false;
-let shieldT = 0;
-let dmgUp = 0;
-let channel = null; // Supabase realtime channel
-
-// =================== SUPABASE REALTIME CHANNEL ===================
-function joinChannel(code){
-    // Leave old channel if exists
-    if(channel){
-        sb.removeChannel(channel);
-        channel = null;
-    }
-
-    channel = sb.channel('arena_'+code, {
-        config: {
-            broadcast: { self: false } // Don't receive own messages
+        let sb;
+        try {
+            sb = window.supabase.createClient(SB_URL, SB_KEY);
+            console.log("✅ Connected to Supabase!");
+        } catch (e) {
+            console.error("❌ Connection failed:", e);
         }
-    });
 
-    // Listen for all messages
-    channel.on('broadcast', {event: 'msg'}, (payload) => {
-        onMsg(payload.payload);
-    });
+        // =================== CANVAS ===================
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        function resizeC() { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
+        resizeC();
+        window.addEventListener("resize", resizeC);
 
-    channel.subscribe((status) => {
-        if(status === 'SUBSCRIBED'){
-            console.log("✅ Joined room: " + code);
-            document.getElementById("connStatus").style.display = "none";
-        }
-    });
-}
+        // =================== CONSTANTS ===================
+        const GAME_TIME = 180;
+        const MAX_LIVES = 3;
+        const MAX_HP = 100;
+        const BULLET_DMG = 20;
+        const BULLET_SPD = 15;
+        const PLAYER_SPD = 4;
+        const RESPAWN_MS = 2500;
+        const MAX_PARTS = 60;
+        const MAX_BULLETS = 25;
+        const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#fd79a8"];
 
-function send(data){
-    if(!channel) return;
-    channel.send({
-        type: 'broadcast',
-        event: 'msg',
-        payload: {...data, sid: myId}
-    });
-}
+        // =================== STATE ===================
+        let myId = Math.random().toString(36).substr(2, 8);
+        let myName = "Player";
+        let roomCode = "";
+        let isHost = false;
+        let gameOn = false;
+        let players = {};
+        let myP = null;
+        let frame = 0;
+        let keys = {};
+        let mx = 0, my2 = 0;
+        let bullets = [];
+        let particles = [];
+        let items = [];
+        let shootCD = 0;
+        let gameTimer = GAME_TIME;
+        let timerInt = null;
+        let killFeed = [];
+        let shakeAmt = 0;
+        let spawnShield = 0;
+        let speedUp = 0;
+        let shieldOn = false;
+        let shieldT = 0;
+        let dmgUp = 0;
+        let channel = null; // Supabase realtime channel
 
-// =================== ROOM SYSTEM ===================
-function mkCode(){return Math.random().toString(36).substr(2,6).toUpperCase()}
+        // =================== SUPABASE REALTIME CHANNEL ===================
+        function joinChannel(code) {
+            // Leave old channel if exists
+            if (channel) {
+                sb.removeChannel(channel);
+                channel = null;
+            }
 
-function createRoom(){
-    myName = document.getElementById("nameInp").value.trim() || "Player";
-    roomCode = mkCode();
-    isHost = true;
+            channel = sb.channel('arena_' + code, {
+                config: {
+                    broadcast: { self: false } // Don't receive own messages
+                }
+            });
 
-    document.getElementById("connStatus").style.display = "block";
-    document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Creating room...';
+            // Listen for all messages
+            channel.on('broadcast', { event: 'msg' }, (payload) => {
+                onMsg(payload.payload);
+            });
 
-    joinChannel(roomCode);
-
-    setTimeout(()=>{
-        enterLobby();
-    }, 1000);
-}
-
-function joinRoom(){
-    myName = document.getElementById("nameInp").value.trim() || "Player";
-    let c = document.getElementById("codeInp").value.trim().toUpperCase();
-    if(c.length < 3){alert("Enter room code!"); return}
-    roomCode = c;
-    isHost = false;
-
-    document.getElementById("connStatus").style.display = "block";
-    document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Joining room...';
-
-    joinChannel(roomCode);
-
-    setTimeout(()=>{
-        enterLobby();
-    }, 1500);
-}
-
-function enterLobby(){
-    document.getElementById("menuBox").style.display = "none";
-    document.getElementById("lobbyBox").style.display = "block";
-    document.getElementById("connStatus").style.display = "none";
-    document.getElementById("codeShow").textContent = roomCode;
-
-    // Show/hide buttons based on host
-    if(isHost){
-        document.getElementById("startBtn").style.display = "block";
-        document.getElementById("waitBtn").style.display = "none";
-    } else {
-        document.getElementById("startBtn").style.display = "none";
-        document.getElementById("waitBtn").style.display = "block";
-    }
-
-    let ci = 0;
-    players[myId] = {
-        id:myId, name:myName, color:COLORS[ci],
-        x:400, y:300, vx:0, vy:0,
-        hp:MAX_HP, lives:MAX_LIVES,
-        score:0, kills:0, deaths:0,
-        angle:0, alive:true, isHost
-    };
-    myP = players[myId];
-
-    // Tell others I joined
-    send({type:"join", id:myId, name:myName, isHost});
-
-    refreshLobby();
-}
-
-function copyCode(){
-    navigator.clipboard.writeText(roomCode).catch(()=>{});
-    let btn = document.querySelector("#lobbyBox .btn-purple");
-    btn.textContent = "✅ Copied!";
-    setTimeout(()=> btn.textContent = "📋 Copy Code", 2000);
-}
-
-function refreshLobby(){
-    let el = document.getElementById("pList");
-    el.innerHTML = "";
-    let ps = Object.values(players);
-    ps.forEach(p => {
-        let d = document.createElement("div");
-        d.className = "pi";
-        d.innerHTML = `<div class="pdot" style="background:${p.color}"></div>
-            <span>${p.name}${p.isHost?" 👑":""}</span>
-            <span style="margin-left:auto;font-size:11px">
-                ${p.id===myId?"(you)":""}
-                ❤️❤️❤️
-            </span>`;
-        el.appendChild(d);
-    });
-    let n = ps.length;
-    document.getElementById("waitMsg").textContent =
-        n >= 2 ? `${n} players ready!` : `Waiting for players... (${n}/8)`;
-}
-
-// =================== MESSAGES ===================
-function onMsg(d){
-    if(d.sid === myId) return;
-
-    if(d.type === "join"){
-        let ci = Object.keys(players).length % COLORS.length;
-        if(!players[d.id]){
-            players[d.id] = {
-                id:d.id, name:d.name, color:COLORS[ci],
-                x:300+Math.random()*200, y:200+Math.random()*200,
-                vx:0, vy:0, hp:MAX_HP, lives:MAX_LIVES,
-                score:0, kills:0, deaths:0,
-                angle:0, alive:true, isHost:d.isHost
-            };
-        }
-        refreshLobby();
-        // Reply with my info
-        send({type:"info", id:myId, name:myName, isHost,
-            score:myP?.score||0, kills:myP?.kills||0,
-            lives:myP?.lives||MAX_LIVES, hp:myP?.hp||MAX_HP});
-        sysChat("⚡ "+d.name+" joined!");
-    }
-    else if(d.type === "info"){
-        if(!players[d.id]){
-            let ci = Object.keys(players).length % COLORS.length;
-            players[d.id] = {
-                id:d.id, name:d.name, color:COLORS[ci],
-                x:300, y:200, vx:0, vy:0,
-                hp:d.hp, lives:d.lives, score:d.score,
-                kills:d.kills, deaths:0, angle:0,
-                alive:true, isHost:d.isHost
-            };
-        }
-        refreshLobby();
-    }
-    else if(d.type === "start"){
-        doStartGame();
-    }
-    else if(d.type === "pos"){
-        let p = players[d.id];
-        if(p){
-            p.x=d.x; p.y=d.y; p.vx=d.vx; p.vy=d.vy;
-            p.angle=d.angle; p.hp=d.hp; p.lives=d.lives;
-            p.score=d.score; p.kills=d.kills; p.alive=d.alive;
-        }
-    }
-    else if(d.type === "bullet"){
-        if(bullets.length < MAX_BULLETS){
-            bullets.push({
-                x:d.x, y:d.y, vx:d.vx, vy:d.vy,
-                oid:d.oid, oname:d.oname, ocolor:d.ocolor,
-                color:d.ocolor, dmg:d.dmg, life:d.life||55
+            channel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log("✅ Joined room: " + code);
+                    document.getElementById("connStatus").style.display = "none";
+                }
             });
         }
-    }
-    else if(d.type === "gotHit"){
-        // Someone's bullet hit ME!
-        if(d.targetId === myId && myP && myP.alive){
-            if(spawnShield > 0 || shieldOn) return;
 
-            let dmg = d.damage || BULLET_DMG;
-            myP.hp -= dmg;
-            shakeAmt = 8;
-
-            // Damage text
-            addPart(myP.x, myP.y-30, 0, -1.5, "#e74c3c", 0, 40, "dmgtext");
-
-            // Blood
-            let n = Math.min(5, MAX_PARTS-particles.length);
-            for(let j=0; j<n; j++){
-                let a = Math.random()*Math.PI*2;
-                addPart(d.bx||myP.x, d.by||myP.y, Math.cos(a)*4, Math.sin(a)*3, "#e74c3c", 3, 22, "blood");
-            }
-
-            if(myP.hp <= 0){
-                myP.hp = 0;
-                myP.alive = false;
-                myP.lives--;
-                myP.deaths = (myP.deaths||0) + 1;
-
-                // Death explosion
-                let n2 = Math.min(10, MAX_PARTS-particles.length);
-                for(let j=0; j<n2; j++){
-                    let a = Math.random()*Math.PI*2;
-                    let s = Math.random()*6+2;
-                    addPart(myP.x, myP.y, Math.cos(a)*s, Math.sin(a)*s,
-                        Math.random()>0.5?"#e74c3c":"#ff7675", 4, 40, "blood");
-                }
-
-                addKF(d.shooterName||"???", myName, d.shooterColor||"#e74c3c");
-                send({type:"kill", kid:d.shooterId, kname:d.shooterName,
-                    vname:myName, kcolor:d.shooterColor});
-
-                if(myP.lives > 0){
-                    sysChat("💀 Killed by "+d.shooterName+"! ("+myP.lives+"❤️ left)");
-                    setTimeout(()=>{
-                        if(myP && gameOn && myP.lives > 0){
-                            myP.alive = true;
-                            myP.hp = MAX_HP;
-                            myP.x = 80+Math.random()*(canvas.width-160);
-                            myP.y = 70+Math.random()*(canvas.height-140);
-                            spawnShield = 150;
-                            sysChat("✨ Respawned!");
-                        }
-                    }, RESPAWN_MS);
-                } else {
-                    sysChat("☠️ All lives lost! Spectating...");
-                }
-            }
+        function send(data) {
+            if (!channel) return;
+            channel.send({
+                type: 'broadcast',
+                event: 'msg',
+                payload: { ...data, sid: myId }
+            });
         }
-    }
-    else if(d.type === "kill"){
-        addKF(d.kname, d.vname, d.kcolor);
-    }
-    else if(d.type === "tick"){
-        gameTimer = d.t;
-    }
-    else if(d.type === "over"){
-        endGame(d.scores);
-    }
-    else if(d.type === "chat"){
-        addChat(d.name, d.text, d.color);
-    }
-    else if(d.type === "item"){
-        items.push(d.it);
-    }
-    else if(d.type === "itemGone"){
-        items = items.filter(it => it.id !== d.iid);
-    }
-    else if(d.type === "leave"){
-        if(players[d.id]){
-            sysChat("👋 "+players[d.id].name+" left");
-            delete players[d.id];
+
+        // =================== ROOM SYSTEM ===================
+        function mkCode() { return Math.random().toString(36).substr(2, 6).toUpperCase() }
+
+        function createRoom() {
+            myName = document.getElementById("nameInp").value.trim() || "Player";
+            roomCode = mkCode();
+            isHost = true;
+
+            document.getElementById("connStatus").style.display = "block";
+            document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Creating room...';
+
+            joinChannel(roomCode);
+
+            setTimeout(() => {
+                enterLobby();
+            }, 1000);
+        }
+
+        function joinRoom() {
+            myName = document.getElementById("nameInp").value.trim() || "Player";
+            let c = document.getElementById("codeInp").value.trim().toUpperCase();
+            if (c.length < 3) { alert("Enter room code!"); return }
+            roomCode = c;
+            isHost = false;
+
+            document.getElementById("connStatus").style.display = "block";
+            document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Joining room...';
+
+            joinChannel(roomCode);
+
+            setTimeout(() => {
+                enterLobby();
+            }, 1500);
+        }
+
+        function enterLobby() {
+            document.getElementById("menuBox").style.display = "none";
+            document.getElementById("lobbyBox").style.display = "block";
+            document.getElementById("connStatus").style.display = "none";
+            document.getElementById("codeShow").textContent = roomCode;
+
+            // Show/hide buttons based on host
+            if (isHost) {
+                document.getElementById("startBtn").style.display = "block";
+                document.getElementById("waitBtn").style.display = "none";
+            } else {
+                document.getElementById("startBtn").style.display = "none";
+                document.getElementById("waitBtn").style.display = "block";
+            }
+
+            let ci = 0;
+            players[myId] = {
+                id: myId, name: myName, color: COLORS[ci],
+                x: 400, y: 300, vx: 0, vy: 0,
+                hp: MAX_HP, lives: MAX_LIVES,
+                score: 0, kills: 0, deaths: 0,
+                angle: 0, alive: true, isHost
+            };
+            myP = players[myId];
+
+            // Tell others I joined
+            send({ type: "join", id: myId, name: myName, isHost });
+
             refreshLobby();
         }
-    }
-}
 
-// =================== START GAME ===================
-function hostStart(){
-    if(!isHost) return;
-    if(Object.keys(players).length < 2){
-        alert("Need at least 2 players!");
-        return;
-    }
-    send({type:"start"});
-    doStartGame();
-}
+        function copyCode() {
+            navigator.clipboard.writeText(roomCode).catch(() => { });
+            let btn = document.querySelector("#lobbyBox .btn-purple");
+            btn.textContent = "✅ Copied!";
+            setTimeout(() => btn.textContent = "📋 Copy Code", 2000);
+        }
 
-function doStartGame(){
-    document.getElementById("ui").style.display = "none";
-    gameOn = true;
-    gameTimer = GAME_TIME;
-    bullets = []; particles = []; items = []; killFeed = [];
+        function refreshLobby() {
+            let el = document.getElementById("pList");
+            el.innerHTML = "";
+            let ps = Object.values(players);
+            ps.forEach(p => {
+                let d = document.createElement("div");
+                d.className = "pi";
+                d.innerHTML = `<div class="pdot" style="background:${p.color}"></div>
+            <span>${p.name}${p.isHost ? " 👑" : ""}</span>
+            <span style="margin-left:auto;font-size:11px">
+                ${p.id === myId ? "(you)" : ""}
+                ❤️❤️❤️
+            </span>`;
+                el.appendChild(d);
+            });
+            let n = ps.length;
+            document.getElementById("waitMsg").textContent =
+                n >= 2 ? `${n} players ready!` : `Waiting for players... (${n}/8)`;
+        }
 
-    let ps = Object.values(players);
-    ps.forEach((p,i) => {
-        let ang = (i/ps.length)*Math.PI*2;
-        p.x = canvas.width/2 + Math.cos(ang)*180;
-        p.y = canvas.height/2 + Math.sin(ang)*180;
-        p.hp = MAX_HP; p.lives = MAX_LIVES;
-        p.alive = true; p.score = 0; p.kills = 0; p.deaths = 0;
-    });
+        // =================== MESSAGES ===================
+        function onMsg(d) {
+            if (d.sid === myId) return;
 
-    // Only host runs the timer
-    if(isHost){
-        timerInt = setInterval(()=>{
-            gameTimer--;
-            // Send timer every 2 seconds (reduce network load)
-            if(gameTimer % 2 === 0) send({type:"tick", t:gameTimer});
-            if(gameTimer > 0 && gameTimer % 12 === 0) spawnItem();
-            if(gameTimer <= 0){
-                clearInterval(timerInt);
-                let scores = Object.values(players).map(p=>({
-                    name:p.name, score:p.score, kills:p.kills,
-                    deaths:p.deaths||0, color:p.color
-                }));
-                send({type:"over", scores});
-                endGame(scores);
+            if (d.type === "join") {
+                let ci = Object.keys(players).length % COLORS.length;
+                if (!players[d.id]) {
+                    players[d.id] = {
+                        id: d.id, name: d.name, color: COLORS[ci],
+                        x: 300 + Math.random() * 200, y: 200 + Math.random() * 200,
+                        vx: 0, vy: 0, hp: MAX_HP, lives: MAX_LIVES,
+                        score: 0, kills: 0, deaths: 0,
+                        angle: 0, alive: true, isHost: d.isHost
+                    };
+                }
+                refreshLobby();
+                // Reply with my info
+                send({
+                    type: "info", id: myId, name: myName, isHost,
+                    score: myP?.score || 0, kills: myP?.kills || 0,
+                    lives: myP?.lives || MAX_LIVES, hp: myP?.hp || MAX_HP
+                });
+                sysChat("⚡ " + d.name + " joined!");
             }
-        }, 1000);
-        setTimeout(()=>{ spawnItem(); spawnItem(); spawnItem(); }, 500);
-    }
-
-    sysChat("🎮 FIGHT! 3 minutes!");
-    requestAnimationFrame(gameLoop);
-}
-
-function spawnItem(){
-    let types = ["health","speed","shield","dmg"];
-    let it = {
-        id: Math.random().toString(36).substr(2,6),
-        type: types[Math.floor(Math.random()*types.length)],
-        x: 80+Math.random()*(canvas.width-160),
-        y: 70+Math.random()*(canvas.height-140),
-        pulse: Math.random()*6
-    };
-    items.push(it);
-    send({type:"item", it});
-}
-
-// =================== HELPERS ===================
-function addPart(x,y,vx,vy,color,size,life,type){
-    if(particles.length >= MAX_PARTS) return;
-    particles.push({x,y,vx,vy,color,size,life,maxLife:life,type:type||"dot"});
-}
-
-function addKF(k,v,c){
-    killFeed.unshift({k,v,c,t:160});
-    if(killFeed.length > 4) killFeed.pop();
-}
-
-function applyItem(type){
-    if(!myP) return;
-    if(type==="health"){myP.hp=Math.min(MAX_HP,myP.hp+40);sysChat("❤️ +40 HP!")}
-    else if(type==="speed"){speedUp=360;sysChat("⚡ Speed 6s!")}
-    else if(type==="shield"){shieldOn=true;shieldT=300;sysChat("🛡️ Shield 5s!")}
-    else if(type==="dmg"){dmgUp=360;sysChat("💥 2x Damage 6s!")}
-}
-
-function addChat(name,text,color){
-    // Simple on-screen chat stored in array
-    killFeed.push({k:name,v:text,c:color||"#fff",t:200,isChat:true});
-    if(killFeed.length > 6) killFeed.shift();
-}
-
-function sysChat(t){ addChat("•",t,"#aaa") }
-
-function sendChat(){
-    let text = prompt("Chat message:");
-    if(text && text.trim()){
-        addChat(myName, text.trim(), myP?.color);
-        send({type:"chat", name:myName, text:text.trim(), color:myP?.color});
-    }
-}
-
-// =================== GAME LOOP ===================
-let lastT = 0;
-function gameLoop(ts){
-    if(!gameOn) return;
-    if(ts-lastT < 14){requestAnimationFrame(gameLoop);return}
-    lastT = ts;
-    frame++;
-
-    let sx=0, sy=0;
-    if(shakeAmt > 0){
-        sx = (Math.random()-0.5)*shakeAmt;
-        sy = (Math.random()-0.5)*shakeAmt;
-        shakeAmt *= 0.8;
-        if(shakeAmt < 0.5) shakeAmt = 0;
-    }
-
-    ctx.save();
-    ctx.translate(sx, sy);
-
-    // Background
-    ctx.fillStyle = "#0a0a1a";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // Grid
-    ctx.strokeStyle = "rgba(255,255,255,0.03)";
-    ctx.lineWidth = 1;
-    for(let x=0;x<canvas.width;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke()}
-    for(let y=0;y<canvas.height;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke()}
-
-    // Border
-    ctx.strokeStyle = "rgba(231,76,60,0.4)";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(22,22,canvas.width-44,canvas.height-44);
-
-    // Timers
-    if(spawnShield > 0) spawnShield--;
-    if(speedUp > 0) speedUp--;
-    if(shieldT > 0){shieldT--;if(shieldT<=0)shieldOn=false}
-    if(dmgUp > 0) dmgUp--;
-    if(shootCD > 0) shootCD--;
-
-    // My movement
-    if(myP && myP.alive){
-        let spd = speedUp>0 ? 7 : PLAYER_SPD;
-        if(keys["w"]||keys["ArrowUp"])myP.vy-=0.55;
-        if(keys["s"]||keys["ArrowDown"])myP.vy+=0.55;
-        if(keys["a"]||keys["ArrowLeft"])myP.vx-=0.55;
-        if(keys["d"]||keys["ArrowRight"])myP.vx+=0.55;
-        myP.vx*=0.86; myP.vy*=0.86;
-        myP.vx=Math.max(-spd,Math.min(spd,myP.vx));
-        myP.vy=Math.max(-spd,Math.min(spd,myP.vy));
-        myP.x=Math.max(32,Math.min(canvas.width-32,myP.x+myP.vx));
-        myP.y=Math.max(32,Math.min(canvas.height-32,myP.y+myP.vy));
-        myP.angle=Math.atan2(my2-myP.y,mx-myP.x);
-
-        // Send position every 4 frames (15fps network update)
-        if(frame % 4 === 0){
-            send({type:"pos", id:myId,
-                x:Math.round(myP.x), y:Math.round(myP.y),
-                vx:Math.round(myP.vx*100)/100,
-                vy:Math.round(myP.vy*100)/100,
-                angle:Math.round(myP.angle*100)/100,
-                hp:myP.hp, lives:myP.lives,
-                score:myP.score, kills:myP.kills, alive:myP.alive});
-        }
-
-        // Item pickup
-        for(let i=items.length-1;i>=0;i--){
-            let it=items[i];
-            let dx=myP.x-it.x,dy=myP.y-it.y;
-            if(Math.sqrt(dx*dx+dy*dy)<28){
-                applyItem(it.type);
-                items.splice(i,1);
-                send({type:"itemGone",iid:it.id});
+            else if (d.type === "info") {
+                if (!players[d.id]) {
+                    let ci = Object.keys(players).length % COLORS.length;
+                    players[d.id] = {
+                        id: d.id, name: d.name, color: COLORS[ci],
+                        x: 300, y: 200, vx: 0, vy: 0,
+                        hp: d.hp, lives: d.lives, score: d.score,
+                        kills: d.kills, deaths: 0, angle: 0,
+                        alive: true, isHost: d.isHost
+                    };
+                }
+                refreshLobby();
             }
-        }
-    }
+            else if (d.type === "start") {
+                doStartGame();
+            }
+            else if (d.type === "pos") {
+                let p = players[d.id];
+                if (p) {
+                    p.x = d.x; p.y = d.y; p.vx = d.vx; p.vy = d.vy;
+                    p.angle = d.angle; p.hp = d.hp; p.lives = d.lives;
+                    p.score = d.score; p.kills = d.kills; p.alive = d.alive;
+                }
+            }
+            else if (d.type === "bullet") {
+                if (bullets.length < MAX_BULLETS) {
+                    bullets.push({
+                        x: d.x, y: d.y, vx: d.vx, vy: d.vy,
+                        oid: d.oid, oname: d.oname, ocolor: d.ocolor,
+                        color: d.ocolor, dmg: d.dmg, life: d.life || 55
+                    });
+                }
+            }
+            else if (d.type === "gotHit") {
+                // Someone's bullet hit ME!
+                if (d.targetId === myId && myP && myP.alive) {
+                    if (spawnShield > 0 || shieldOn) return;
 
-    // ===== ITEMS =====
-    items.forEach(it=>{
-        it.pulse+=0.05;
-        let cols={health:"#e74c3c",speed:"#f39c12",shield:"#3498db",dmg:"#9b59b6"};
-        let icons={health:"❤️",speed:"⚡",shield:"🛡️",dmg:"💥"};
-        let c=cols[it.type]||"#fff";
-        let pulse=Math.sin(it.pulse)*0.25+0.75;
-        ctx.globalAlpha=pulse;
-        ctx.shadowColor=c;ctx.shadowBlur=12;
-        ctx.beginPath();ctx.arc(it.x,it.y,15,0,Math.PI*2);
-        ctx.fillStyle=c+"44";ctx.fill();
-        ctx.strokeStyle=c;ctx.lineWidth=2;ctx.stroke();
-        ctx.shadowBlur=0;ctx.globalAlpha=1;
-        ctx.font="14px Arial";ctx.textAlign="center";
-        ctx.fillText(icons[it.type]||"?",it.x,it.y+5);
-    });
+                    let dmg = d.damage || BULLET_DMG;
+                    myP.hp -= dmg;
+                    shakeAmt = 8;
 
-    // ===== PLAYERS =====
-    Object.values(players).forEach(p=>{
-        if(!p.alive){
-            ctx.globalAlpha=0.25;ctx.font="22px Arial";ctx.textAlign="center";
-            ctx.fillText("💀",p.x,p.y+8);ctx.globalAlpha=1;
-            return;
-        }
-
-        let isMe = p.id===myId;
-
-        // Spawn shield
-        if(isMe && spawnShield>0){
-            ctx.globalAlpha=0.25+Math.sin(frame*0.2)*0.15;
-            ctx.beginPath();ctx.arc(p.x,p.y,28,0,Math.PI*2);
-            ctx.fillStyle="#f1c40f33";ctx.fill();
-            ctx.strokeStyle="#f1c40f";ctx.lineWidth=2;ctx.stroke();
-            ctx.globalAlpha=1;
-        }
-
-        // Shield
-        if(isMe && shieldOn){
-            ctx.globalAlpha=0.4+Math.sin(frame*0.15)*0.2;
-            ctx.beginPath();ctx.arc(p.x,p.y,26,0,Math.PI*2);
-            ctx.strokeStyle="#3498db";ctx.lineWidth=3;ctx.stroke();
-            ctx.globalAlpha=1;
-        }
-
-        // Shadow
-        ctx.fillStyle="rgba(0,0,0,0.25)";
-        ctx.beginPath();ctx.ellipse(p.x,p.y+19,14,5,0,0,Math.PI*2);ctx.fill();
-
-        // Body
-        ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);
-        let bg=ctx.createRadialGradient(p.x-3,p.y-3,3,p.x,p.y,18);
-        bg.addColorStop(0,p.color);bg.addColorStop(1,p.color+"88");
-        ctx.fillStyle=bg;ctx.fill();
-        ctx.strokeStyle=isMe?"rgba(255,255,255,0.85)":"rgba(255,255,255,0.3)";
-        ctx.lineWidth=isMe?2.5:1.5;ctx.stroke();
-
-        // Gun
-        ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);
-        ctx.fillStyle="#444";ctx.fillRect(8,-5,22,10);
-        ctx.fillStyle=p.color;ctx.fillRect(8,-3,20,6);
-        ctx.restore();
-
-        // Eyes
-        ctx.fillStyle="white";
-        ctx.beginPath();ctx.arc(p.x-5,p.y-3,3,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(p.x+5,p.y-3,3,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle="#111";
-        ctx.beginPath();ctx.arc(p.x-5+Math.cos(p.angle),p.y-3+Math.sin(p.angle),1.5,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(p.x+5+Math.cos(p.angle),p.y-3+Math.sin(p.angle),1.5,0,Math.PI*2);ctx.fill();
-
-        // Name
-        ctx.fillStyle="rgba(0,0,0,0.75)";
-        let nw=ctx.measureText(p.name).width+12;
-        ctx.beginPath();ctx.roundRect(p.x-nw/2,p.y-44,nw,17,4);ctx.fill();
-        ctx.fillStyle=isMe?"#f1c40f":"white";
-        ctx.font="bold 11px Arial";ctx.textAlign="center";
-        ctx.fillText(p.name,p.x,p.y-30);
-
-        // HP bar
-        let bw=40;
-        ctx.fillStyle="rgba(0,0,0,0.6)";
-        ctx.beginPath();ctx.roundRect(p.x-bw/2,p.y-53,bw,5,2);ctx.fill();
-        let hpPct=p.hp/MAX_HP;
-        if(p.hp>0){
-            ctx.fillStyle=hpPct>0.6?"#2ecc71":hpPct>0.3?"#f39c12":"#e74c3c";
-            ctx.beginPath();ctx.roundRect(p.x-bw/2,p.y-53,bw*hpPct,5,2);ctx.fill();
-        }
-
-        // HP text
-        ctx.fillStyle="white";ctx.font="7px Arial";
-        ctx.fillText(p.hp,p.x,p.y-50);
-
-        // Lives
-        ctx.font="10px Arial";
-        for(let i=0;i<MAX_LIVES;i++){
-            ctx.fillText(i<p.lives?"❤️":"🖤",p.x-12+i*12,p.y-58);
-        }
-
-        // Score
-        if(p.score>0){
-            ctx.fillStyle=p.color+"dd";
-            ctx.beginPath();ctx.arc(p.x+20,p.y-18,11,0,Math.PI*2);ctx.fill();
-            ctx.fillStyle="white";ctx.font="bold 9px Arial";
-            ctx.fillText(p.score,p.x+20,p.y-14);
-        }
-    });
-
-    // ===== BULLETS =====
-    let newBullets = [];
-    for(let i=0; i<bullets.length; i++){
-        let b = bullets[i];
-        b.x += b.vx; b.y += b.vy; b.life--;
-
-        if(b.x<20||b.x>canvas.width-20||b.y<20||b.y>canvas.height-20||b.life<=0)
-            continue;
-
-        // Draw
-        ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);
-        ctx.fillStyle=b.color||b.ocolor||"#fff";ctx.fill();
-        ctx.shadowColor=b.color||b.ocolor;ctx.shadowBlur=6;ctx.fill();ctx.shadowBlur=0;
-
-        let hitSomething = false;
-
-        // MY bullet hitting OTHER players
-        if(b.oid === myId){
-            for(let pid in players){
-                if(pid === myId) continue;
-                let p = players[pid];
-                if(!p.alive) continue;
-
-                let dx=b.x-p.x, dy=b.y-p.y;
-                if(Math.sqrt(dx*dx+dy*dy) < 22){
-                    hitSomething = true;
-                    myP.score += 5;
-
-                    addPart(myP.x,myP.y-25,0,-1,"#f1c40f",0,35,"score");
+                    // Damage text
+                    addPart(myP.x, myP.y - 30, 0, -1.5, "#e74c3c", 0, 40, "dmgtext");
 
                     // Blood
-                    let n=Math.min(5,MAX_PARTS-particles.length);
-                    for(let j=0;j<n;j++){
-                        let a=Math.random()*Math.PI*2;
-                        addPart(b.x,b.y,Math.cos(a)*4,Math.sin(a)*3,"#e74c3c",3,20,"blood");
+                    let n = Math.min(5, MAX_PARTS - particles.length);
+                    for (let j = 0; j < n; j++) {
+                        let a = Math.random() * Math.PI * 2;
+                        addPart(d.bx || myP.x, d.by || myP.y, Math.cos(a) * 4, Math.sin(a) * 3, "#e74c3c", 3, 22, "blood");
                     }
 
-                    // Tell the other player they got hit!
-                    send({
-                        type:"gotHit",
-                        targetId:pid,
-                        damage:b.dmg||BULLET_DMG,
-                        shooterId:myId,
-                        shooterName:myName,
-                        shooterColor:myP.color,
-                        bx:b.x, by:b.y
-                    });
+                    if (myP.hp <= 0) {
+                        myP.hp = 0;
+                        myP.alive = false;
+                        myP.lives--;
+                        myP.deaths = (myP.deaths || 0) + 1;
 
-                    // Update other player's HP locally
-                    p.hp = Math.max(0, p.hp-(b.dmg||BULLET_DMG));
+                        // Death explosion
+                        let n2 = Math.min(10, MAX_PARTS - particles.length);
+                        for (let j = 0; j < n2; j++) {
+                            let a = Math.random() * Math.PI * 2;
+                            let s = Math.random() * 6 + 2;
+                            addPart(myP.x, myP.y, Math.cos(a) * s, Math.sin(a) * s,
+                                Math.random() > 0.5 ? "#e74c3c" : "#ff7675", 4, 40, "blood");
+                        }
 
-                    if(p.hp <= 0){
-                        p.alive = false;
-                        p.lives--;
-                        myP.score += 20;
-                        myP.kills++;
-                        addPart(myP.x,myP.y-40,0,-1,"#2ecc71",0,50,"killtext");
-                        addKF(myName,p.name,myP.color);
+                        addKF(d.shooterName || "???", myName, d.shooterColor || "#e74c3c");
+                        send({
+                            type: "kill", kid: d.shooterId, kname: d.shooterName,
+                            vname: myName, kcolor: d.shooterColor
+                        });
 
-                        let n3=Math.min(8,MAX_PARTS-particles.length);
-                        for(let j=0;j<n3;j++){
-                            let a=Math.random()*Math.PI*2;
-                            let s=Math.random()*6+2;
-                            addPart(p.x,p.y,Math.cos(a)*s,Math.sin(a)*s,
-                                Math.random()>0.5?"#e74c3c":"#ff7675",4,40,"blood");
+                        if (myP.lives > 0) {
+                            sysChat("💀 Killed by " + d.shooterName + "! (" + myP.lives + "❤️ left)");
+                        
+                            setTimeout(() => {
+                                if (myP && gameOn && myP.lives > 0) {
+                                    myP.alive = true;
+                                    myP.hp = MAX_HP;
+                                    myP.x = 80 + Math.random() * (canvas.width - 160);
+                                    myP.y = 70 + Math.random() * (canvas.height - 140);
+                                    spawnShield = 150;
+                                    sysChat("✨ Respawned!");
+                                }
+                            }, RESPAWN_MS);
+                        } else {
+                            sysChat("☠️ All lives lost! Spectating...");
+                             checkLastStanding();
                         }
                     }
-                    break;
+                }
+            }
+            else if (d.type === "kill") {
+                addKF(d.kname, d.vname, d.kcolor);
+            }
+            else if (d.type === "tick") {
+                gameTimer = d.t;
+            }
+            else if (d.type === "over") {
+                endGame(d.scores);
+            }
+            else if (d.type === "chat") {
+                addChat(d.name, d.text, d.color);
+            }
+            else if (d.type === "item") {
+                items.push(d.it);
+            }
+            else if (d.type === "itemGone") {
+                items = items.filter(it => it.id !== d.iid);
+            }
+            else if (d.type === "leave") {
+                if (players[d.id]) {
+                    sysChat("👋 " + players[d.id].name + " left");
+                    delete players[d.id];
+                    refreshLobby();
                 }
             }
         }
 
-        if(!hitSomething) newBullets.push(b);
-    }
-    bullets = newBullets;
-
-    // ===== PARTICLES =====
-    let newParts = [];
-    for(let i=0;i<particles.length;i++){
-        let p=particles[i];
-        p.x+=p.vx;p.y+=p.vy;p.life--;
-        if(p.type==="blood")p.vy+=0.18;
-
-        let alpha=Math.max(0,p.life/p.maxLife);
-        ctx.globalAlpha=alpha;
-
-        if(p.type==="score"){ctx.fillStyle="#f1c40f";ctx.font="bold 15px Arial";ctx.textAlign="center";ctx.fillText("+5",p.x,p.y)}
-        else if(p.type==="killtext"){ctx.fillStyle="#2ecc71";ctx.font="bold 16px Arial";ctx.textAlign="center";ctx.fillText("☠ KILL +20",p.x,p.y)}
-        else if(p.type==="dmgtext"){ctx.fillStyle="#e74c3c";ctx.font="bold 15px Arial";ctx.textAlign="center";ctx.fillText("-"+BULLET_DMG,p.x,p.y)}
-        else{ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0.5,p.size*alpha),0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill()}
-        ctx.globalAlpha=1;
-
-        if(p.life>0) newParts.push(p);
-    }
-    particles = newParts;
-
-    ctx.restore();
-
-    // ===== HUD =====
-    ctx.fillStyle="rgba(0,0,10,0.8)";ctx.fillRect(0,0,canvas.width,52);
-    ctx.fillStyle="rgba(241,196,15,0.25)";ctx.fillRect(0,51,canvas.width,1);
-
-    // Timer
-    let mins=Math.floor(gameTimer/60),secs=gameTimer%60;
-    let tStr=mins+":"+(secs<10?"0":"")+secs;
-    let isLow=gameTimer<=30;
-    ctx.font="bold 26px Arial";ctx.textAlign="center";
-    ctx.fillStyle=isLow?(frame%20<10?"#ff4444":"#e74c3c"):"#f1c40f";
-    ctx.fillText("⏱ "+tStr,canvas.width/2,38);
-
-    // My stats
-    if(myP){
-        ctx.textAlign="left";ctx.font="bold 13px Arial";
-        ctx.fillStyle="#fff";ctx.fillText("Score:",12,20);
-        ctx.fillStyle="#f1c40f";ctx.fillText(myP.score,68,20);
-        ctx.fillStyle="#fff";ctx.fillText("Kills:",12,38);
-        ctx.fillStyle="#2ecc71";ctx.fillText(myP.kills,62,38);
-        ctx.font="13px Arial";
-        for(let i=0;i<MAX_LIVES;i++){ctx.fillText(i<myP.lives?"❤️":"🖤",130+i*18,22)}
-
-        let hx=128,hy=28,hw=110,hh=14;
-        ctx.fillStyle="rgba(255,255,255,0.1)";
-        ctx.beginPath();ctx.roundRect(hx,hy,hw,hh,4);ctx.fill();
-        let hpPct=myP.hp/MAX_HP;
-        if(myP.hp>0){
-            ctx.fillStyle=hpPct>0.6?"#2ecc71":hpPct>0.3?"#f39c12":"#e74c3c";
-            ctx.beginPath();ctx.roundRect(hx,hy,hw*hpPct,hh,4);ctx.fill();
-        }
-        ctx.fillStyle="white";ctx.font="bold 9px Arial";ctx.textAlign="center";
-        ctx.fillText(myP.hp+"/"+MAX_HP,hx+hw/2,hy+11);
-    }
-
-    // Leaderboard
-    let sorted=Object.values(players).sort((a,b)=>b.score-a.score);
-    let medals=["🥇","🥈","🥉","4️⃣"];
-    ctx.textAlign="right";ctx.font="bold 12px Arial";
-    sorted.slice(0,4).forEach((p,i)=>{
-        ctx.fillStyle=p.id===myId?"#f1c40f":p.color;
-        ctx.fillText(medals[i]+" "+p.name+": "+p.score,canvas.width-12,16+i*16);
-    });
-
-    // Kill feed / chat
-    let feedY=60;
-    killFeed.forEach((kf,i)=>{
-        if(kf.t>0){
-            kf.t--;
-            ctx.globalAlpha=Math.min(1,kf.t/20);
-            ctx.font="bold 11px Arial";ctx.textAlign="center";
-            if(kf.isChat){
-                ctx.fillStyle=kf.c||"#fff";
-                ctx.fillText(kf.k+": "+kf.v,canvas.width/2,feedY+i*16);
-            }else{
-                ctx.fillStyle=kf.c||"#e74c3c";
-                ctx.fillText("☠ "+kf.k+" → "+kf.v,canvas.width/2,feedY+i*16);
+        // =================== START GAME ===================
+        function hostStart() {
+            if (!isHost) return;
+            if (Object.keys(players).length < 2) {
+                alert("Need at least 2 players!");
+                return;
             }
-            ctx.globalAlpha=1;
+            send({ type: "start" });
+            doStartGame();
         }
-    });
-    killFeed=killFeed.filter(kf=>kf.t>0);
 
-    // Powerup indicators
-    let pyInd=canvas.height-12;
-    ctx.textAlign="left";ctx.font="bold 11px Arial";
-    if(speedUp>0){ctx.fillStyle="#f39c12";ctx.fillText("⚡ Speed "+(Math.ceil(speedUp/60))+"s",12,pyInd);pyInd-=18}
-    if(shieldOn){ctx.fillStyle="#3498db";ctx.fillText("🛡️ Shield "+(Math.ceil(shieldT/60))+"s",12,pyInd);pyInd-=18}
-    if(dmgUp>0){ctx.fillStyle="#9b59b6";ctx.fillText("💥 2x DMG "+(Math.ceil(dmgUp/60))+"s",12,pyInd)}
+        function doStartGame() {
+            document.getElementById("ui").style.display = "none";
+            gameOn = true;
+            gameTimer = GAME_TIME;
+            bullets = []; particles = []; items = []; killFeed = [];
 
-    // Dead message
-    if(myP&&!myP.alive){
-        ctx.fillStyle="rgba(0,0,0,0.6)";
-        ctx.beginPath();ctx.roundRect(canvas.width/2-120,canvas.height/2-22,240,44,10);ctx.fill();
-        ctx.fillStyle="white";ctx.font="bold 15px Arial";ctx.textAlign="center";
-        if(myP.lives>0){ctx.fillText("💀 Respawning... "+myP.lives+"❤️",canvas.width/2,canvas.height/2+6)}
-        else{ctx.fillStyle="#e74c3c";ctx.fillText("☠️ Spectating...",canvas.width/2,canvas.height/2+6)}
-    }
+            let ps = Object.values(players);
+            ps.forEach((p, i) => {
+                let ang = (i / ps.length) * Math.PI * 2;
+                p.x = canvas.width / 2 + Math.cos(ang) * 180;
+                p.y = canvas.height / 2 + Math.sin(ang) * 180;
+                p.hp = MAX_HP; p.lives = MAX_LIVES;
+                p.alive = true; p.score = 0; p.kills = 0; p.deaths = 0;
+            });
 
-    // Chat button hint
-    ctx.fillStyle="rgba(255,255,255,0.25)";ctx.font="10px Arial";ctx.textAlign="center";
-    ctx.fillText("WASD=Move | Click=Shoot | T=Chat",canvas.width/2,canvas.height-6);
+            // Only host runs the timer
+            if (isHost) {
+                timerInt = setInterval(() => {
+                    gameTimer--;
+                    // Send timer every 2 seconds (reduce network load)
+                    if (gameTimer % 2 === 0) send({ type: "tick", t: gameTimer });
+                    if (gameTimer > 0 && gameTimer % 12 === 0) spawnItem();
+                    if (gameTimer <= 0) {
+                        clearInterval(timerInt);
+                        let scores = Object.values(players).map(p => ({
+                            name: p.name, score: p.score, kills: p.kills,
+                            deaths: p.deaths || 0, color: p.color
+                        }));
+                        send({ type: "over", scores });
+                        endGame(scores);
+                    }
+                }, 1000);
+                setTimeout(() => { spawnItem(); spawnItem(); spawnItem(); }, 500);
+            }
 
-    requestAnimationFrame(gameLoop);
-}
+            sysChat("🎮 FIGHT! 3 minutes!");
+            requestAnimationFrame(gameLoop);
+        }
 
-// =================== SHOOTING ===================
-canvas.addEventListener("click",e=>{
-    if(!myP||!myP.alive||!gameOn||shootCD>0) return;
-    let angle=Math.atan2(e.clientY-myP.y,e.clientX-myP.x);
-    let dmg=dmgUp>0?40:BULLET_DMG;
+        function spawnItem() {
+            let types = ["health", "speed", "shield", "dmg"];
+            let it = {
+                id: Math.random().toString(36).substr(2, 6),
+                type: types[Math.floor(Math.random() * types.length)],
+                x: 80 + Math.random() * (canvas.width - 160),
+                y: 70 + Math.random() * (canvas.height - 140),
+                pulse: Math.random() * 6
+            };
+            items.push(it);
+            send({ type: "item", it });
+        }
 
-    let b={
-        x:myP.x+Math.cos(angle)*26,
-        y:myP.y+Math.sin(angle)*26,
-        vx:Math.cos(angle)*BULLET_SPD,
-        vy:Math.sin(angle)*BULLET_SPD,
-        oid:myId, oname:myName, ocolor:myP.color,
-        color:myP.color, dmg, life:55
-    };
+        // =================== HELPERS ===================
+        function addPart(x, y, vx, vy, color, size, life, type) {
+            if (particles.length >= MAX_PARTS) return;
+            particles.push({ x, y, vx, vy, color, size, life, maxLife: life, type: type || "dot" });
+        }
 
-    if(bullets.length<MAX_BULLETS){
-        bullets.push(b);
-        send({type:"bullet",...b});
-    }
+        function addKF(k, v, c) {
+            killFeed.unshift({ k, v, c, t: 160 });
+            if (killFeed.length > 4) killFeed.pop();
+        }
 
-    let n=Math.min(3,MAX_PARTS-particles.length);
-    for(let i=0;i<n;i++){
-        let a=angle+(Math.random()-0.5)*0.6;
-        addPart(b.x,b.y,Math.cos(a)*4,Math.sin(a)*4,"#f1c40f",2.5,8,"dot");
-    }
-    shootCD=10;
-});
+        function applyItem(type) {
+            if (!myP) return;
+            if (type === "health") { myP.hp = Math.min(MAX_HP, myP.hp + 40); sysChat("❤️ +40 HP!") }
+            else if (type === "speed") { speedUp = 360; sysChat("⚡ Speed 6s!") }
+            else if (type === "shield") { shieldOn = true; shieldT = 300; sysChat("🛡️ Shield 5s!") }
+            else if (type === "dmg") { dmgUp = 360; sysChat("💥 2x Damage 6s!") }
+        }
 
-// Hold to shoot
-let mouseDown=false;
-canvas.addEventListener("mousedown",()=>mouseDown=true);
-canvas.addEventListener("mouseup",()=>mouseDown=false);
-setInterval(()=>{
-    if(mouseDown&&myP&&myP.alive&&gameOn&&shootCD<=0){
-        canvas.dispatchEvent(new MouseEvent("click",{clientX:mx,clientY:my2,bubbles:true}));
-    }
-},100);
+        function addChat(name, text, color) {
+            // Simple on-screen chat stored in array
+            killFeed.push({ k: name, v: text, c: color || "#fff", t: 200, isChat: true });
+            if (killFeed.length > 6) killFeed.shift();
+        }
 
-canvas.addEventListener("mousemove",e=>{
-    mx=e.clientX;my2=e.clientY;
-    if(myP)myP.angle=Math.atan2(my2-myP.y,mx-myP.x);
-});
+        function sysChat(t) { addChat("•", t, "#aaa") }
 
-// Touch
-canvas.addEventListener("touchmove",e=>{
-    e.preventDefault();let t=e.touches[0];mx=t.clientX;my2=t.clientY;
-    if(myP)myP.angle=Math.atan2(my2-myP.y,mx-myP.x);
-},{passive:false});
-canvas.addEventListener("touchstart",e=>{
-    e.preventDefault();let t=e.touches[0];mx=t.clientX;my2=t.clientY;
-    if(myP&&myP.alive&&gameOn&&shootCD<=0){
-        canvas.dispatchEvent(new MouseEvent("click",{clientX:mx,clientY:my2,bubbles:true}));
-    }
-},{passive:false});
+        function sendChat() {
+            let text = prompt("Chat message:");
+            if (text && text.trim()) {
+                addChat(myName, text.trim(), myP?.color);
+                send({ type: "chat", name: myName, text: text.trim(), color: myP?.color });
+            }
+        }
 
-window.addEventListener("keydown",e=>{
-    keys[e.key]=true;
-    if(e.key==="t"||e.key==="T"){if(gameOn)sendChat()}
-});
-window.addEventListener("keyup",e=>keys[e.key]=false);
-window.addEventListener("beforeunload",()=>send({type:"leave",id:myId}));
+        // =================== CHECK LAST PLAYER STANDING ===================
+        function checkLastStanding() {
+            if (!gameOn) return;
 
-// =================== END GAME ===================
-function endGame(scores){
-    gameOn=false;
-    if(timerInt)clearInterval(timerInt);
+            // Count players who still have lives
+            let alivePlayers = Object.values(players).filter(p => p.lives > 0);
 
-    document.getElementById("ui").style.display="flex";
-    document.getElementById("lobbyBox").style.display="none";
-    document.getElementById("menuBox").style.display="none";
-    document.getElementById("winBox").style.display="block";
+            if (alivePlayers.length <= 1) {
+                // Game over! Only 1 or 0 players left
+                sysChat("🏆 Last player standing!");
 
-    if(!scores){
-        scores=Object.values(players).map(p=>({
-            name:p.name,score:p.score,kills:p.kills,
-            deaths:p.deaths||0,color:p.color
-        }));
-    }
-    scores.sort((a,b)=>b.score-a.score);
+                // Small delay so kill animation plays
+                setTimeout(() => {
+                    if (!gameOn) return;
 
-    let winner=scores[0]||{name:"Nobody",score:0,color:"#fff"};
-    let isMe=winner.name===myName;
+                    // Stop the timer
+                    if (timerInt) clearInterval(timerInt);
 
-    document.getElementById("winTitle").textContent=isMe?"🏆 YOU WIN!":"🏆 Game Over!";
-    document.getElementById("winTitle").style.color=isMe?"#f1c40f":"#e74c3c";
-    document.getElementById("winName").textContent="👑 "+winner.name+" — "+winner.score+" pts!";
-    document.getElementById("winName").style.color=winner.color;
+                    // Give bonus to last standing player
+                    if (alivePlayers.length === 1) {
+                        let winner = alivePlayers[0];
+                        winner.score += 50; // Survival bonus!
+                        sysChat("👑 " + winner.name + " gets +50 survival bonus!");
+                    }
 
-    let html="";
-    let m=["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
-    scores.forEach((s,i)=>{
-        let isMine=s.name===myName;
-        html+=`<div style="display:flex;justify-content:space-between;align-items:center;
+                    // Build scores
+                    let scores = Object.values(players).map(p => ({
+                        name: p.name,
+                        score: p.score,
+                        kills: p.kills,
+                        deaths: p.deaths || 0,
+                        color: p.color
+                    }));
+
+                    // If I'm the host, broadcast game over
+                    if (isHost) {
+                        send({ type: "over", scores });
+                    }
+
+                    // End the game
+                    endGame(scores);
+
+                }, 1500); // 1.5 second delay for dramatic effect
+            }
+        }
+        // =================== GAME LOOP ===================
+        let lastT = 0;
+        function gameLoop(ts) {
+            if (!gameOn) return;
+            if (ts - lastT < 14) { requestAnimationFrame(gameLoop); return }
+            lastT = ts;
+            frame++;
+
+            let sx = 0, sy = 0;
+            if (shakeAmt > 0) {
+                sx = (Math.random() - 0.5) * shakeAmt;
+                sy = (Math.random() - 0.5) * shakeAmt;
+                shakeAmt *= 0.8;
+                if (shakeAmt < 0.5) shakeAmt = 0;
+            }
+
+            ctx.save();
+            ctx.translate(sx, sy);
+
+            // Background
+            ctx.fillStyle = "#0a0a1a";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            ctx.strokeStyle = "rgba(255,255,255,0.03)";
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke() }
+            for (let y = 0; y < canvas.height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke() }
+
+            // Border
+            ctx.strokeStyle = "rgba(231,76,60,0.4)";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(22, 22, canvas.width - 44, canvas.height - 44);
+
+            // Timers
+            if (spawnShield > 0) spawnShield--;
+            if (speedUp > 0) speedUp--;
+            if (shieldT > 0) { shieldT--; if (shieldT <= 0) shieldOn = false }
+            if (dmgUp > 0) dmgUp--;
+            if (shootCD > 0) shootCD--;
+
+            // My movement
+            if (myP && myP.alive) {
+                let spd = speedUp > 0 ? 7 : PLAYER_SPD;
+                if (keys["w"] || keys["ArrowUp"]) myP.vy -= 0.55;
+                if (keys["s"] || keys["ArrowDown"]) myP.vy += 0.55;
+                if (keys["a"] || keys["ArrowLeft"]) myP.vx -= 0.55;
+                if (keys["d"] || keys["ArrowRight"]) myP.vx += 0.55;
+                myP.vx *= 0.86; myP.vy *= 0.86;
+                myP.vx = Math.max(-spd, Math.min(spd, myP.vx));
+                myP.vy = Math.max(-spd, Math.min(spd, myP.vy));
+                myP.x = Math.max(32, Math.min(canvas.width - 32, myP.x + myP.vx));
+                myP.y = Math.max(32, Math.min(canvas.height - 32, myP.y + myP.vy));
+                myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
+
+                // Send position every 4 frames (15fps network update)
+                if (frame % 4 === 0) {
+                    send({
+                        type: "pos", id: myId,
+                        x: Math.round(myP.x), y: Math.round(myP.y),
+                        vx: Math.round(myP.vx * 100) / 100,
+                        vy: Math.round(myP.vy * 100) / 100,
+                        angle: Math.round(myP.angle * 100) / 100,
+                        hp: myP.hp, lives: myP.lives,
+                        score: myP.score, kills: myP.kills, alive: myP.alive
+                    });
+                }
+
+                // Item pickup
+                for (let i = items.length - 1; i >= 0; i--) {
+                    let it = items[i];
+                    let dx = myP.x - it.x, dy = myP.y - it.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 28) {
+                        applyItem(it.type);
+                        items.splice(i, 1);
+                        send({ type: "itemGone", iid: it.id });
+                    }
+                }
+            }
+
+            // ===== ITEMS =====
+            items.forEach(it => {
+                it.pulse += 0.05;
+                let cols = { health: "#e74c3c", speed: "#f39c12", shield: "#3498db", dmg: "#9b59b6" };
+                let icons = { health: "❤️", speed: "⚡", shield: "🛡️", dmg: "💥" };
+                let c = cols[it.type] || "#fff";
+                let pulse = Math.sin(it.pulse) * 0.25 + 0.75;
+                ctx.globalAlpha = pulse;
+                ctx.shadowColor = c; ctx.shadowBlur = 12;
+                ctx.beginPath(); ctx.arc(it.x, it.y, 15, 0, Math.PI * 2);
+                ctx.fillStyle = c + "44"; ctx.fill();
+                ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke();
+                ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+                ctx.font = "14px Arial"; ctx.textAlign = "center";
+                ctx.fillText(icons[it.type] || "?", it.x, it.y + 5);
+            });
+
+            // ===== PLAYERS =====
+            Object.values(players).forEach(p => {
+                if (!p.alive) {
+                    ctx.globalAlpha = 0.25; ctx.font = "22px Arial"; ctx.textAlign = "center";
+                    ctx.fillText("💀", p.x, p.y + 8); ctx.globalAlpha = 1;
+                    return;
+                }
+
+                let isMe = p.id === myId;
+
+                // Spawn shield
+                if (isMe && spawnShield > 0) {
+                    ctx.globalAlpha = 0.25 + Math.sin(frame * 0.2) * 0.15;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 28, 0, Math.PI * 2);
+                    ctx.fillStyle = "#f1c40f33"; ctx.fill();
+                    ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+
+                // Shield
+                if (isMe && shieldOn) {
+                    ctx.globalAlpha = 0.4 + Math.sin(frame * 0.15) * 0.2;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
+                    ctx.strokeStyle = "#3498db"; ctx.lineWidth = 3; ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+
+                // Shadow
+                ctx.fillStyle = "rgba(0,0,0,0.25)";
+                ctx.beginPath(); ctx.ellipse(p.x, p.y + 19, 14, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+                // Body
+                ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+                let bg = ctx.createRadialGradient(p.x - 3, p.y - 3, 3, p.x, p.y, 18);
+                bg.addColorStop(0, p.color); bg.addColorStop(1, p.color + "88");
+                ctx.fillStyle = bg; ctx.fill();
+                ctx.strokeStyle = isMe ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)";
+                ctx.lineWidth = isMe ? 2.5 : 1.5; ctx.stroke();
+
+                // Gun
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+                ctx.fillStyle = "#444"; ctx.fillRect(8, -5, 22, 10);
+                ctx.fillStyle = p.color; ctx.fillRect(8, -3, 20, 6);
+                ctx.restore();
+
+                // Eyes
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(p.x - 5, p.y - 3, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x + 5, p.y - 3, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#111";
+                ctx.beginPath(); ctx.arc(p.x - 5 + Math.cos(p.angle), p.y - 3 + Math.sin(p.angle), 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x + 5 + Math.cos(p.angle), p.y - 3 + Math.sin(p.angle), 1.5, 0, Math.PI * 2); ctx.fill();
+
+                // Name
+                ctx.fillStyle = "rgba(0,0,0,0.75)";
+                let nw = ctx.measureText(p.name).width + 12;
+                ctx.beginPath(); ctx.roundRect(p.x - nw / 2, p.y - 44, nw, 17, 4); ctx.fill();
+                ctx.fillStyle = isMe ? "#f1c40f" : "white";
+                ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+                ctx.fillText(p.name, p.x, p.y - 30);
+
+                // HP bar
+                let bw = 40;
+                ctx.fillStyle = "rgba(0,0,0,0.6)";
+                ctx.beginPath(); ctx.roundRect(p.x - bw / 2, p.y - 53, bw, 5, 2); ctx.fill();
+                let hpPct = p.hp / MAX_HP;
+                if (p.hp > 0) {
+                    ctx.fillStyle = hpPct > 0.6 ? "#2ecc71" : hpPct > 0.3 ? "#f39c12" : "#e74c3c";
+                    ctx.beginPath(); ctx.roundRect(p.x - bw / 2, p.y - 53, bw * hpPct, 5, 2); ctx.fill();
+                }
+
+                // HP text
+                ctx.fillStyle = "white"; ctx.font = "7px Arial";
+                ctx.fillText(p.hp, p.x, p.y - 50);
+
+                // Lives
+                ctx.font = "10px Arial";
+                for (let i = 0; i < MAX_LIVES; i++) {
+                    ctx.fillText(i < p.lives ? "❤️" : "🖤", p.x - 12 + i * 12, p.y - 58);
+                }
+
+                // Score
+                if (p.score > 0) {
+                    ctx.fillStyle = p.color + "dd";
+                    ctx.beginPath(); ctx.arc(p.x + 20, p.y - 18, 11, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "white"; ctx.font = "bold 9px Arial";
+                    ctx.fillText(p.score, p.x + 20, p.y - 14);
+                }
+            });
+
+            // ===== BULLETS =====
+            let newBullets = [];
+            for (let i = 0; i < bullets.length; i++) {
+                let b = bullets[i];
+                b.x += b.vx; b.y += b.vy; b.life--;
+
+                if (b.x < 20 || b.x > canvas.width - 20 || b.y < 20 || b.y > canvas.height - 20 || b.life <= 0)
+                    continue;
+
+                // Draw
+                ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = b.color || b.ocolor || "#fff"; ctx.fill();
+                ctx.shadowColor = b.color || b.ocolor; ctx.shadowBlur = 6; ctx.fill(); ctx.shadowBlur = 0;
+
+                let hitSomething = false;
+
+                // MY bullet hitting OTHER players
+                if (b.oid === myId) {
+                    for (let pid in players) {
+                        if (pid === myId) continue;
+                        let p = players[pid];
+                        if (!p.alive) continue;
+
+                        let dx = b.x - p.x, dy = b.y - p.y;
+                        if (Math.sqrt(dx * dx + dy * dy) < 22) {
+                            hitSomething = true;
+                            myP.score += 5;
+
+                            addPart(myP.x, myP.y - 25, 0, -1, "#f1c40f", 0, 35, "score");
+
+                            // Blood
+                            let n = Math.min(5, MAX_PARTS - particles.length);
+                            for (let j = 0; j < n; j++) {
+                                let a = Math.random() * Math.PI * 2;
+                                addPart(b.x, b.y, Math.cos(a) * 4, Math.sin(a) * 3, "#e74c3c", 3, 20, "blood");
+                            }
+
+                            // Tell the other player they got hit!
+                            send({
+                                type: "gotHit",
+                                targetId: pid,
+                                damage: b.dmg || BULLET_DMG,
+                                shooterId: myId,
+                                shooterName: myName,
+                                shooterColor: myP.color,
+                                bx: b.x, by: b.y
+                            });
+
+                            // Update other player's HP locally
+                            p.hp = Math.max(0, p.hp - (b.dmg || BULLET_DMG));
+
+                            if (p.hp <= 0) {
+                                p.alive = false;
+                                p.lives--;
+                                myP.score += 20;
+                                myP.kills++;
+                                addPart(myP.x, myP.y - 40, 0, -1, "#2ecc71", 0, 50, "killtext");
+                                addKF(myName, p.name, myP.color);
+
+                                let n3 = Math.min(8, MAX_PARTS - particles.length);
+                                for (let j = 0; j < n3; j++) {
+                                    let a = Math.random() * Math.PI * 2;
+                                    let s = Math.random() * 6 + 2;
+                                    addPart(p.x, p.y, Math.cos(a) * s, Math.sin(a) * s,
+                                        Math.random() > 0.5 ? "#e74c3c" : "#ff7675", 4, 40, "blood");
+                                }
+                                checkLastStanding();
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (!hitSomething) newBullets.push(b);
+            }
+            bullets = newBullets;
+
+            // ===== PARTICLES =====
+            let newParts = [];
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if (p.type === "blood") p.vy += 0.18;
+
+                let alpha = Math.max(0, p.life / p.maxLife);
+                ctx.globalAlpha = alpha;
+
+                if (p.type === "score") { ctx.fillStyle = "#f1c40f"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("+5", p.x, p.y) }
+                else if (p.type === "killtext") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.fillText("☠ KILL +20", p.x, p.y) }
+                else if (p.type === "dmgtext") { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("-" + BULLET_DMG, p.x, p.y) }
+                else { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.size * alpha), 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill() }
+                ctx.globalAlpha = 1;
+
+                if (p.life > 0) newParts.push(p);
+            }
+            particles = newParts;
+
+            ctx.restore();
+
+            // ===== HUD =====
+            ctx.fillStyle = "rgba(0,0,10,0.8)"; ctx.fillRect(0, 0, canvas.width, 52);
+            ctx.fillStyle = "rgba(241,196,15,0.25)"; ctx.fillRect(0, 51, canvas.width, 1);
+
+            // Timer
+            let mins = Math.floor(gameTimer / 60), secs = gameTimer % 60;
+            let tStr = mins + ":" + (secs < 10 ? "0" : "") + secs;
+            let isLow = gameTimer <= 30;
+            ctx.font = "bold 26px Arial"; ctx.textAlign = "center";
+            ctx.fillStyle = isLow ? (frame % 20 < 10 ? "#ff4444" : "#e74c3c") : "#f1c40f";
+            ctx.fillText("⏱ " + tStr, canvas.width / 2, 38);
+
+            // My stats
+            if (myP) {
+                ctx.textAlign = "left"; ctx.font = "bold 13px Arial";
+                ctx.fillStyle = "#fff"; ctx.fillText("Score:", 12, 20);
+                ctx.fillStyle = "#f1c40f"; ctx.fillText(myP.score, 68, 20);
+                ctx.fillStyle = "#fff"; ctx.fillText("Kills:", 12, 38);
+                ctx.fillStyle = "#2ecc71"; ctx.fillText(myP.kills, 62, 38);
+                ctx.font = "13px Arial";
+                for (let i = 0; i < MAX_LIVES; i++) { ctx.fillText(i < myP.lives ? "❤️" : "🖤", 130 + i * 18, 22) }
+
+                let hx = 128, hy = 28, hw = 110, hh = 14;
+                ctx.fillStyle = "rgba(255,255,255,0.1)";
+                ctx.beginPath(); ctx.roundRect(hx, hy, hw, hh, 4); ctx.fill();
+                let hpPct = myP.hp / MAX_HP;
+                if (myP.hp > 0) {
+                    ctx.fillStyle = hpPct > 0.6 ? "#2ecc71" : hpPct > 0.3 ? "#f39c12" : "#e74c3c";
+                    ctx.beginPath(); ctx.roundRect(hx, hy, hw * hpPct, hh, 4); ctx.fill();
+                }
+                ctx.fillStyle = "white"; ctx.font = "bold 9px Arial"; ctx.textAlign = "center";
+                ctx.fillText(myP.hp + "/" + MAX_HP, hx + hw / 2, hy + 11);
+            }
+
+            // Leaderboard
+            let sorted = Object.values(players).sort((a, b) => b.score - a.score);
+            let medals = ["🥇", "🥈", "🥉", "4️⃣"];
+            ctx.textAlign = "right"; ctx.font = "bold 12px Arial";
+            sorted.slice(0, 4).forEach((p, i) => {
+                ctx.fillStyle = p.id === myId ? "#f1c40f" : p.color;
+                ctx.fillText(medals[i] + " " + p.name + ": " + p.score, canvas.width - 12, 16 + i * 16);
+            });
+
+            // Kill feed / chat
+            let feedY = 60;
+            killFeed.forEach((kf, i) => {
+                if (kf.t > 0) {
+                    kf.t--;
+                    ctx.globalAlpha = Math.min(1, kf.t / 20);
+                    ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+                    if (kf.isChat) {
+                        ctx.fillStyle = kf.c || "#fff";
+                        ctx.fillText(kf.k + ": " + kf.v, canvas.width / 2, feedY + i * 16);
+                    } else {
+                        ctx.fillStyle = kf.c || "#e74c3c";
+                        ctx.fillText("☠ " + kf.k + " → " + kf.v, canvas.width / 2, feedY + i * 16);
+                    }
+                    ctx.globalAlpha = 1;
+                }
+            });
+            killFeed = killFeed.filter(kf => kf.t > 0);
+
+            // Powerup indicators
+            let pyInd = canvas.height - 12;
+            ctx.textAlign = "left"; ctx.font = "bold 11px Arial";
+            if (speedUp > 0) { ctx.fillStyle = "#f39c12"; ctx.fillText("⚡ Speed " + (Math.ceil(speedUp / 60)) + "s", 12, pyInd); pyInd -= 18 }
+            if (shieldOn) { ctx.fillStyle = "#3498db"; ctx.fillText("🛡️ Shield " + (Math.ceil(shieldT / 60)) + "s", 12, pyInd); pyInd -= 18 }
+            if (dmgUp > 0) { ctx.fillStyle = "#9b59b6"; ctx.fillText("💥 2x DMG " + (Math.ceil(dmgUp / 60)) + "s", 12, pyInd) }
+
+            // Dead message
+            if (myP && !myP.alive) {
+                ctx.fillStyle = "rgba(0,0,0,0.6)";
+                ctx.beginPath(); ctx.roundRect(canvas.width / 2 - 120, canvas.height / 2 - 22, 240, 44, 10); ctx.fill();
+                ctx.fillStyle = "white"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
+                if (myP.lives > 0) { ctx.fillText("💀 Respawning... " + myP.lives + "❤️", canvas.width / 2, canvas.height / 2 + 6) }
+                else { ctx.fillStyle = "#e74c3c"; ctx.fillText("☠️ Spectating...", canvas.width / 2, canvas.height / 2 + 6) }
+            }
+
+            // Chat button hint
+            ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.font = "10px Arial"; ctx.textAlign = "center";
+            ctx.fillText("WASD=Move | Click=Shoot | T=Chat", canvas.width / 2, canvas.height - 6);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // =================== SHOOTING ===================
+        canvas.addEventListener("click", e => {
+            if (!myP || !myP.alive || !gameOn || shootCD > 0) return;
+            let angle = Math.atan2(e.clientY - myP.y, e.clientX - myP.x);
+            let dmg = dmgUp > 0 ? 40 : BULLET_DMG;
+
+            let b = {
+                x: myP.x + Math.cos(angle) * 26,
+                y: myP.y + Math.sin(angle) * 26,
+                vx: Math.cos(angle) * BULLET_SPD,
+                vy: Math.sin(angle) * BULLET_SPD,
+                oid: myId, oname: myName, ocolor: myP.color,
+                color: myP.color, dmg, life: 55
+            };
+
+            if (bullets.length < MAX_BULLETS) {
+                bullets.push(b);
+                send({ type: "bullet", ...b });
+            }
+
+            let n = Math.min(3, MAX_PARTS - particles.length);
+            for (let i = 0; i < n; i++) {
+                let a = angle + (Math.random() - 0.5) * 0.6;
+                addPart(b.x, b.y, Math.cos(a) * 4, Math.sin(a) * 4, "#f1c40f", 2.5, 8, "dot");
+            }
+            shootCD = 10;
+        });
+
+        // Hold to shoot
+        let mouseDown = false;
+        canvas.addEventListener("mousedown", () => mouseDown = true);
+        canvas.addEventListener("mouseup", () => mouseDown = false);
+        setInterval(() => {
+            if (mouseDown && myP && myP.alive && gameOn && shootCD <= 0) {
+                canvas.dispatchEvent(new MouseEvent("click", { clientX: mx, clientY: my2, bubbles: true }));
+            }
+        }, 100);
+
+        canvas.addEventListener("mousemove", e => {
+            mx = e.clientX; my2 = e.clientY;
+            if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
+        });
+
+        // Touch
+        canvas.addEventListener("touchmove", e => {
+            e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY;
+            if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
+        }, { passive: false });
+        canvas.addEventListener("touchstart", e => {
+            e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY;
+            if (myP && myP.alive && gameOn && shootCD <= 0) {
+                canvas.dispatchEvent(new MouseEvent("click", { clientX: mx, clientY: my2, bubbles: true }));
+            }
+        }, { passive: false });
+
+        window.addEventListener("keydown", e => {
+            keys[e.key] = true;
+            if (e.key === "t" || e.key === "T") { if (gameOn) sendChat() }
+        });
+        window.addEventListener("keyup", e => keys[e.key] = false);
+        window.addEventListener("beforeunload", () => send({ type: "leave", id: myId }));
+
+        // =================== END GAME ===================
+        function endGame(scores) {
+            gameOn = false;
+            if (timerInt) clearInterval(timerInt);
+
+            document.getElementById("ui").style.display = "flex";
+            document.getElementById("lobbyBox").style.display = "none";
+            document.getElementById("menuBox").style.display = "none";
+            document.getElementById("winBox").style.display = "block";
+
+            if (!scores) {
+                scores = Object.values(players).map(p => ({
+                    name: p.name, score: p.score, kills: p.kills,
+                    deaths: p.deaths || 0, color: p.color
+                }));
+            }
+            scores.sort((a, b) => b.score - a.score);
+
+            let winner = scores[0] || { name: "Nobody", score: 0, color: "#fff" };
+            let isMe = winner.name === myName;
+
+            document.getElementById("winTitle").textContent = isMe ? "🏆 YOU WIN!" : "🏆 Game Over!";
+            document.getElementById("winTitle").style.color = isMe ? "#f1c40f" : "#e74c3c";
+            document.getElementById("winName").textContent = "👑 " + winner.name + " — " + winner.score + " pts!";
+            document.getElementById("winName").style.color = winner.color;
+
+            let html = "";
+            let m = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣"];
+            scores.forEach((s, i) => {
+                let isMine = s.name === myName;
+                html += `<div style="display:flex;justify-content:space-between;align-items:center;
             padding:9px 12px;margin-bottom:5px;border-radius:8px;
-            background:${isMine?"rgba(241,196,15,0.12)":"rgba(255,255,255,0.04)"};
-            border:1px solid ${isMine?"rgba(241,196,15,0.3)":"rgba(255,255,255,0.07)"};
+            background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};
+            border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};
             color:white;font-size:13px">
             <div>
-                <span style="font-size:15px">${m[i]||"•"}</span>
+                <span style="font-size:15px">${m[i] || "•"}</span>
                 <span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>
-                ${isMine?"<span style='color:#f1c40f;font-size:10px'> YOU</span>":""}
+                ${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
             </div>
             <div style="text-align:right">
                 <div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
                 <div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
             </div>
         </div>`;
-    });
-    document.getElementById("finalList").innerHTML=html;
-}
+            });
+            document.getElementById("finalList").innerHTML = html;
+        }
 
-function playAgain(){
-    document.getElementById("winBox").style.display="none";
-    document.getElementById("lobbyBox").style.display="block";
-    bullets=[];particles=[];items=[];killFeed=[];
-    gameTimer=GAME_TIME;shootCD=0;
-    Object.values(players).forEach(p=>{
-        p.score=0;p.kills=0;p.deaths=0;
-        p.hp=MAX_HP;p.lives=MAX_LIVES;p.alive=true;
-    });
-    if(isHost){
-        document.getElementById("startBtn").style.display="block";
-        document.getElementById("waitBtn").style.display="none";
-    }else{
-        document.getElementById("startBtn").style.display="none";
-        document.getElementById("waitBtn").style.display="block";
-    }
-    refreshLobby();
-}
-</script>
+        function playAgain() {
+            document.getElementById("winBox").style.display = "none";
+            document.getElementById("lobbyBox").style.display = "block";
+            bullets = []; particles = []; items = []; killFeed = [];
+            gameTimer = GAME_TIME; shootCD = 0;
+            Object.values(players).forEach(p => {
+                p.score = 0; p.kills = 0; p.deaths = 0;
+                p.hp = MAX_HP; p.lives = MAX_LIVES; p.alive = true;
+            });
+            if (isHost) {
+                document.getElementById("startBtn").style.display = "block";
+                document.getElementById("waitBtn").style.display = "none";
+            } else {
+                document.getElementById("startBtn").style.display = "none";
+                document.getElementById("waitBtn").style.display = "block";
+            }
+            refreshLobby();
+        }
+    </script>
 </body>
+
 </html>
