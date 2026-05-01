@@ -220,6 +220,21 @@
                 <div class="room-code-label">Share code with friends:</div>
                 <div class="room-code-value" id="codeShow">------</div>
             </div>
+            <div id="mapSelector" style="margin-bottom:12px;display:none">
+                <div style="color:#aaa;font-size:11px;margin-bottom:5px">🎮 Select Map:</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn" onclick="selectMap(0)"
+                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🏞️ Plain</button>
+                    <button class="btn" onclick="selectMap(1)"
+                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🌀 Maze</button>
+                    <button class="btn" onclick="selectMap(2)"
+                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">⚔️ Crossfire</button>
+                    <button class="btn" onclick="selectMap(3)"
+                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🏟️ Colosseum</button>
+                    <button class="btn" onclick="selectMap(4)"
+                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🎯 Dodge</button>
+                </div>
+            </div>
             <div id="pList"></div>
             <button class="btn btn-green" id="startBtn" onclick="hostStart()" style="margin-top:12px;display:none">▶
                 Start Game</button>
@@ -273,6 +288,17 @@
         const MAX_BULLETS = 25;
         const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#fd79a8"];
 
+        // =================== MAP SYSTEM ===================
+        const MAPS = {
+            PLAIN: { name: "🏞️ Plain Arena", id: 0 },
+            MAZE: { name: "🌀 Maze", id: 1 },
+            CROSSFIRE: { name: "⚔️ Crossfire", id: 2 },
+            ARENA: { name: "🏟️ Colosseum", id: 3 },
+            DODGE: { name: "🎯 Dodge", id: 4 }
+        };
+
+        let currentMap = MAPS.PLAIN.id;
+        let obstacles = [];
         // =================== STATE ===================
         let myId = Math.random().toString(36).substr(2, 8);
         let myName = "Player";
@@ -346,6 +372,176 @@
         }
 
         function sysChat(t) { addChat("•", t, "#aaa") }
+        // =================== MAP FUNCTIONS ===================
+        function getMapObstacles(mapId, canvasW, canvasH) {
+            let obs = [];
+            let margin = 40;
+
+            if (mapId === MAPS.PLAIN.id) {
+                return [];
+            }
+            else if (mapId === MAPS.MAZE.id) {
+                // Create a real maze with corridors and rooms
+                let w = canvasW;
+                let h = canvasH;
+
+                // Outer boundary walls
+                obs.push({ x: margin - 10, y: margin - 10, w: 20, h: h - 2 * margin + 20 });
+                obs.push({ x: w - margin - 10, y: margin - 10, w: 20, h: h - 2 * margin + 20 });
+                obs.push({ x: margin - 10, y: margin - 10, w: w - 2 * margin + 20, h: 20 });
+                obs.push({ x: margin - 10, y: h - margin - 10, w: w - 2 * margin + 20, h: 20 });
+
+                // Inner maze walls - creates winding path
+                // Top-left room walls
+                obs.push({ x: margin + 80, y: margin, w: 20, h: 120 });
+                obs.push({ x: margin, y: margin + 100, w: 120, h: 20 });
+                obs.push({ x: margin + 160, y: margin + 60, w: 20, h: 100 });
+
+                // Center maze
+                obs.push({ x: w / 2 - 100, y: margin + 80, w: 20, h: 150 });
+                obs.push({ x: w / 2 + 80, y: margin + 80, w: 20, h: 150 });
+                obs.push({ x: margin + 100, y: h / 2 - 50, w: 180, h: 20 });
+                obs.push({ x: w - margin - 180, y: h / 2 - 50, w: 180, h: 20 });
+
+                // Bottom area walls
+                obs.push({ x: margin + 60, y: h - margin - 120, w: 20, h: 120 });
+                obs.push({ x: margin + 140, y: h - margin - 180, w: 120, h: 20 });
+                obs.push({ x: w - margin - 80, y: h - margin - 140, w: 20, h: 100 });
+                obs.push({ x: w - margin - 180, y: h - margin - 80, w: 100, h: 20 });
+
+                // Additional random pillars for cover
+                for (let i = 0; i < 6; i++) {
+                    let px = margin + 80 + Math.random() * (w - 2 * margin - 160);
+                    let py = margin + 80 + Math.random() * (h - 2 * margin - 160);
+                    obs.push({ x: px, y: py, w: 30, h: 30 });
+                }
+            }
+            else if (mapId === MAPS.CROSSFIRE.id) {
+                let centerX = canvasW / 2;
+                let centerY = canvasH / 2;
+                obs.push({ x: centerX - 80, y: centerY - 80, w: 60, h: 60 });
+                obs.push({ x: centerX + 20, y: centerY - 80, w: 60, h: 60 });
+                obs.push({ x: centerX - 80, y: centerY + 20, w: 60, h: 60 });
+                obs.push({ x: centerX + 20, y: centerY + 20, w: 60, h: 60 });
+                obs.push({ x: margin, y: centerY - 100, w: 80, h: 200 });
+                obs.push({ x: canvasW - margin - 80, y: centerY - 100, w: 80, h: 200 });
+            }
+            else if (mapId === MAPS.ARENA.id) {
+                let centerX = canvasW / 2;
+                let centerY = canvasH / 2;
+                let radius = Math.min(canvasW, canvasH) / 2 - 60;
+                for (let i = 0; i < 8; i++) {
+                    let angle = (i / 8) * Math.PI * 2;
+                    let x = centerX + Math.cos(angle) * radius - 30;
+                    let y = centerY + Math.sin(angle) * radius - 30;
+                    obs.push({ x: x, y: y, w: 60, h: 60 });
+                }
+                obs.push({ x: centerX - 40, y: centerY - 40, w: 80, h: 80 });
+            }
+            else if (mapId === MAPS.DODGE.id) {
+                let spacing = 100;
+                for (let x = margin + 60; x < canvasW - margin; x += spacing) {
+                    for (let y = margin + 60; y < canvasH - margin; y += spacing) {
+                        obs.push({ x: x - 20, y: y - 20, w: 40, h: 40 });
+                    }
+                }
+            }
+            return obs;
+        }
+
+        function drawMap(ctx, mapId, canvasW, canvasH) {
+            if (mapId === MAPS.PLAIN.id) {
+                ctx.fillStyle = "#1a4d1a";
+                ctx.fillRect(0, 0, canvasW, canvasH);
+                for (let i = 0; i < 200; i++) {
+                    ctx.fillStyle = "#2d6a2d";
+                    ctx.fillRect(Math.random() * canvasW, Math.random() * canvasH, 2, 2);
+                }
+            }
+            else if (mapId === MAPS.MAZE.id) {
+                // Dark dungeon floor with grid pattern
+                ctx.fillStyle = "#1a1a2e";
+                ctx.fillRect(0, 0, canvasW, canvasH);
+                // Add stone tile pattern
+                ctx.strokeStyle = "#2a2a4e";
+                ctx.lineWidth = 1;
+                for (let x = 0; x < canvasW; x += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvasH);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < canvasH; y += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvasW, y);
+                    ctx.stroke();
+                }
+                // Add torch glow effect
+                ctx.fillStyle = "rgba(255,100,0,0.05)";
+                for (let i = 0; i < 20; i++) {
+                    ctx.beginPath();
+                    ctx.arc(50 + Math.random() * (canvasW - 100), 50 + Math.random() * (canvasH - 100), 80, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            else if (mapId === MAPS.CROSSFIRE.id) {
+                ctx.fillStyle = "#c2b280";
+                ctx.fillRect(0, 0, canvasW, canvasH);
+                for (let i = 0; i < 300; i++) {
+                    ctx.fillStyle = "#d4c4a8";
+                    ctx.fillRect(Math.random() * canvasW, Math.random() * canvasH, 1, 1);
+                }
+            }
+            else if (mapId === MAPS.ARENA.id) {
+                ctx.fillStyle = "#8b7355";
+                ctx.fillRect(0, 0, canvasW, canvasH);
+                ctx.strokeStyle = "#cd9575";
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 10; i++) {
+                    ctx.beginPath();
+                    ctx.arc(canvasW / 2, canvasH / 2, 50 + i * 40, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            else if (mapId === MAPS.DODGE.id) {
+                ctx.fillStyle = "#4a6741";
+                ctx.fillRect(0, 0, canvasW, canvasH);
+                ctx.fillStyle = "#5c7c53";
+                for (let i = 0; i < 50; i++) {
+                    ctx.fillRect(Math.random() * canvasW, Math.random() * canvasH, 4, 4);
+                }
+            }
+        }
+
+        function drawObstacles(ctx, obstacles) {
+            for (let obs of obstacles) {
+                ctx.fillStyle = "rgba(0,0,0,0.3)";
+                ctx.fillRect(obs.x + 4, obs.y + 4, obs.w, obs.h);
+                ctx.fillStyle = "#5d4e3a";
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                ctx.fillStyle = "#7d6e5a";
+                ctx.fillRect(obs.x + 2, obs.y + 2, obs.w - 4, 4);
+                ctx.strokeStyle = "#3d2e1a";
+                ctx.lineWidth = 1;
+                for (let i = 0; i < obs.w; i += 20) {
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + i, obs.y);
+                    ctx.lineTo(obs.x + i, obs.y + obs.h);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function checkCollision(x, y, r, obstacles) {
+            for (let obs of obstacles) {
+                if (x + r > obs.x && x - r < obs.x + obs.w &&
+                    y + r > obs.y && y - r < obs.y + obs.h) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         function addStreakEffect(x, y, text, color) {
             streakEffects.push({ x, y, text, color, life: 40 });
@@ -427,8 +623,8 @@
             matchHistory.forEach((m, i) => {
                 let date = new Date(m.timestamp).toLocaleTimeString();
                 historyText += `${i + 1}. ${date} - Winner: ${m.winner}\n`;
-                historyText += `   You: ${m.myScore} pts (${m.myKills}K/${m.myDeaths}D)\n`;
-                historyText += `   Top: ${Object.entries(m.playerStats).slice(0, 3).map(([n, s]) => `${n}(${s.kills}K)`).join(", ")}\n\n`;
+                historyText += ` You: ${m.myScore} pts (${m.myKills}K/${m.myDeaths}D)\n`;
+                historyText += ` Top: ${Object.entries(m.playerStats).slice(0, 3).map(([n, s]) => `${n}(${s.kills}K)`).join(", ")}\n\n`;
             });
             alert(historyText);
         }
@@ -545,9 +741,11 @@
             if (isHost) {
                 document.getElementById("startBtn").style.display = "block";
                 document.getElementById("waitBtn").style.display = "none";
+                document.getElementById("mapSelector").style.display = "block";
             } else {
                 document.getElementById("startBtn").style.display = "none";
                 document.getElementById("waitBtn").style.display = "block";
+                document.getElementById("mapSelector").style.display = "none";
             }
 
             let ci = Object.keys(players).length % COLORS.length;
@@ -561,11 +759,33 @@
             myP = players[myId];
 
             setTimeout(() => {
-                send({ type: "join", id: myId, name: myName, isHost });
+                send({ type: "join", id: myId, name: myName, isHost, currentMap: currentMap });
                 console.log("📢 Sent join message");
             }, 500);
 
             refreshLobby();
+        }
+        function selectMap(mapId) {
+            if (!isHost) return;
+            currentMap = mapId;
+            let mapName = Object.values(MAPS).find(m => m.id === mapId).name;
+            sysChat(`🗺️ Map changed to ${mapName}`);
+
+            let btns = document.querySelectorAll("#mapSelector .btn");
+            btns.forEach((btn, i) => {
+                if (i === mapId) {
+                    btn.style.background = "#f1c40f";
+                    btn.style.color = "#000";
+                } else {
+                    btn.style.background = "#2c3e50";
+                    btn.style.color = "#888";
+                }
+            });
+
+            // Send to all players
+            send({ type: "mapChange", mapId: mapId });
+            // Also send sync for any late joiners
+            send({ type: "mapSync", mapId: mapId });
         }
 
         function copyCode() {
@@ -588,11 +808,11 @@
                     badgeHtml = `<span style="font-size:10px;margin-left:5px">${badges[p.id].map(b => playerTitles[b]).join(" ")}</span>`;
                 }
                 d.innerHTML = `<div class="pdot" style="background:${p.color}"></div>
-                    <span>${p.name}${p.isHost ? " 👑" : ""}${badgeHtml}</span>
-                    <span style="margin-left:auto;font-size:11px">
-                        ${p.id === myId ? "(you)" : ""}
-                        ❤️❤️❤️
-                    </span>`;
+<span>${p.name}${p.isHost ? " 👑" : ""}${badgeHtml}</span>
+<span style="margin-left:auto;font-size:11px">
+${p.id === myId ? "(you)" : ""}
+❤️❤️❤️
+</span>`;
                 el.appendChild(d);
             });
             let n = ps.length;
@@ -615,6 +835,14 @@
                         angle: 0, alive: true, isHost: d.isHost
                     };
                     console.log("➕ Player joined:", d.name);
+
+                    // If I am host, send current map to the new player
+                    if (isHost && d.currentMap !== undefined) {
+                        setTimeout(() => {
+                            send({ type: "mapSync", mapId: currentMap });
+                            console.log("🗺️ Sent map sync to new player:", currentMap);
+                        }, 500);
+                    }
                 }
                 refreshLobby();
                 send({
@@ -635,6 +863,14 @@
                         alive: true, isHost: d.isHost
                     };
                     refreshLobby();
+
+                    // If I am host, send current map to this player
+                    if (isHost) {
+                        setTimeout(() => {
+                            send({ type: "mapSync", mapId: currentMap });
+                            console.log("🗺️ Sent map sync via info reply");
+                        }, 500);
+                    }
                 }
             }
             else if (d.type === "start") {
@@ -741,6 +977,31 @@
                     refreshLobby();
                 }
             }
+            else if (d.type === "mapChange") {
+                currentMap = d.mapId;
+                let mapName = Object.values(MAPS).find(m => m.id === currentMap).name;
+                sysChat(`🗺️ Map changed to ${mapName}`);
+                console.log("🗺️ Map changed to:", mapName);
+                // Update button styles for host (if host sees this)
+                if (isHost) {
+                    let btns = document.querySelectorAll("#mapSelector .btn");
+                    btns.forEach((btn, i) => {
+                        if (i === currentMap) {
+                            btn.style.background = "#f1c40f";
+                            btn.style.color = "#000";
+                        } else {
+                            btn.style.background = "#2c3e50";
+                            btn.style.color = "#888";
+                        }
+                    });
+                }
+            }
+            else if (d.type === "mapSync") {
+                currentMap = d.mapId;
+                let mapName = Object.values(MAPS).find(m => m.id === currentMap).name;
+                sysChat(`🗺️ Map set to ${mapName}`);
+                console.log("🗺️ Map synced to:", mapName);
+            }
             else if (d.type === "emote") {
                 addChat(d.name, d.emote, d.color);
                 let p = players[d.id];
@@ -767,11 +1028,22 @@
             gameTimer = GAME_TIME;
             bullets = []; particles = []; items = []; killFeed = [];
 
+            // Generate obstacles
+            obstacles = getMapObstacles(currentMap, canvas.width, canvas.height);
+
             let ps = Object.values(players);
             ps.forEach((p, i) => {
                 let ang = (i / ps.length) * Math.PI * 2;
-                p.x = canvas.width / 2 + Math.cos(ang) * 180;
-                p.y = canvas.height / 2 + Math.sin(ang) * 180;
+                let spawnX = canvas.width / 2 + Math.cos(ang) * 180;
+                let spawnY = canvas.height / 2 + Math.sin(ang) * 180;
+                let attempts = 0;
+                while (checkCollision(spawnX, spawnY, 20, obstacles) && attempts < 20) {
+                    spawnX = 80 + Math.random() * (canvas.width - 160);
+                    spawnY = 70 + Math.random() * (canvas.height - 140);
+                    attempts++;
+                }
+                p.x = spawnX;
+                p.y = spawnY;
                 p.hp = MAX_HP; p.lives = MAX_LIVES;
                 p.alive = true; p.score = 0; p.kills = 0; p.deaths = 0;
             });
@@ -861,21 +1133,25 @@
             ctx.save();
             ctx.translate(sx, sy);
 
-            // Background
-            ctx.fillStyle = "#0a0a1a";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Draw map background
+            drawMap(ctx, currentMap, canvas.width, canvas.height);
 
-            // Grid
-            ctx.strokeStyle = "rgba(255,255,255,0.03)";
-            ctx.lineWidth = 1;
-            for (let x = 0; x < canvas.width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke() }
-            for (let y = 0; y < canvas.height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke() }
+            // Draw obstacles
+            drawObstacles(ctx, obstacles);
+
+            // Grid overlay
+            ctx.fillStyle = "rgba(255,255,255,0.03)";
+            for (let x = 0; x < canvas.width; x += 60) {
+                ctx.fillRect(x, 0, 1, canvas.height);
+            }
+            for (let y = 0; y < canvas.height; y += 60) {
+                ctx.fillRect(0, y, canvas.width, 1);
+            }
 
             // Border
             ctx.strokeStyle = "rgba(231,76,60,0.4)";
             ctx.lineWidth = 3;
             ctx.strokeRect(22, 22, canvas.width - 44, canvas.height - 44);
-
             // Timers
             if (spawnShield > 0) spawnShield--;
             if (speedUp > 0) speedUp--;
@@ -893,8 +1169,25 @@
                 myP.vx *= 0.86; myP.vy *= 0.86;
                 myP.vx = Math.max(-spd, Math.min(spd, myP.vx));
                 myP.vy = Math.max(-spd, Math.min(spd, myP.vy));
-                myP.x = Math.max(32, Math.min(canvas.width - 32, myP.x + myP.vx));
-                myP.y = Math.max(70, Math.min(canvas.height - 50, myP.y + myP.vy));
+
+                // Apply collision
+                let newX = myP.x + myP.vx;
+                let newY = myP.y + myP.vy;
+
+                if (!checkCollision(newX, myP.y, 18, obstacles)) {
+                    myP.x = newX;
+                } else {
+                    myP.vx *= -0.3;
+                }
+
+                if (!checkCollision(myP.x, newY, 18, obstacles)) {
+                    myP.y = newY;
+                } else {
+                    myP.vy *= -0.3;
+                }
+
+                myP.x = Math.max(32, Math.min(canvas.width - 32, myP.x));
+                myP.y = Math.max(70, Math.min(canvas.height - 50, myP.y));
                 myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
 
                 // Trail recording
@@ -1037,6 +1330,20 @@
                 ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
                 ctx.fillStyle = b.color || b.ocolor || "#fff"; ctx.fill();
                 ctx.shadowColor = b.color || b.ocolor; ctx.shadowBlur = 6; ctx.fill(); ctx.shadowBlur = 0;
+
+                // Check bullet collision with walls
+                let bulletHitWall = false;
+                for (let obs of obstacles) {
+                    if (b.x + 5 > obs.x && b.x - 5 < obs.x + obs.w &&
+                        b.y + 5 > obs.y && b.y - 5 < obs.y + obs.h) {
+                        bulletHitWall = true;
+                        for (let j = 0; j < 3; j++) {
+                            addPart(b.x, b.y, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, "#888", 2, 10, "dust");
+                        }
+                        break;
+                    }
+                }
+                if (bulletHitWall) continue;
 
                 let hitSomething = false;
 
@@ -1377,20 +1684,20 @@
             scores.forEach((s, i) => {
                 let isMine = s.name === myName;
                 html += `<div style="display:flex;justify-content:space-between;align-items:center;
-                    padding:9px 12px;margin-bottom:5px;border-radius:8px;
-                    background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};
-                    border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};
-                    color:white;font-size:13px">
-                    <div>
-                        <span style="font-size:15px">${m[i] || "•"}</span>
-                        <span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>
-                        ${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
-                    </div>
-                    <div style="text-align:right">
-                        <div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
-                        <div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
-                    </div>
-                </div>`;
+padding:9px 12px;margin-bottom:5px;border-radius:8px;
+background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};
+border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};
+color:white;font-size:13px">
+<div>
+<span style="font-size:15px">${m[i] || "•"}</span>
+<span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>
+${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
+</div>
+<div style="text-align:right">
+<div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
+<div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
+</div>
+</div>`;
             });
             document.getElementById("finalList").innerHTML = html;
         }
