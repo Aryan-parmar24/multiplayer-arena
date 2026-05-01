@@ -526,7 +526,7 @@
 
                         if (myP.lives > 0) {
                             sysChat("💀 Killed by " + d.shooterName + "! (" + myP.lives + "❤️ left)");
-                        
+
                             setTimeout(() => {
                                 if (myP && gameOn && myP.lives > 0) {
                                     myP.alive = true;
@@ -539,7 +539,7 @@
                             }, RESPAWN_MS);
                         } else {
                             sysChat("☠️ All lives lost! Spectating...");
-                             checkLastStanding();
+                            checkLastStanding();
                         }
                     }
                 }
@@ -672,46 +672,24 @@
         // =================== CHECK LAST PLAYER STANDING ===================
         function checkLastStanding() {
             if (!gameOn) return;
-
-            // Count players who still have lives
             let alivePlayers = Object.values(players).filter(p => p.lives > 0);
-
             if (alivePlayers.length <= 1) {
-                // Game over! Only 1 or 0 players left
                 sysChat("🏆 Last player standing!");
-
-                // Small delay so kill animation plays
                 setTimeout(() => {
                     if (!gameOn) return;
-
-                    // Stop the timer
                     if (timerInt) clearInterval(timerInt);
-
-                    // Give bonus to last standing player
                     if (alivePlayers.length === 1) {
-                        let winner = alivePlayers[0];
-                        winner.score += 50; // Survival bonus!
-                        sysChat("👑 " + winner.name + " gets +50 survival bonus!");
+                        alivePlayers[0].score += 50;
                     }
-
-                    // Build scores
                     let scores = Object.values(players).map(p => ({
-                        name: p.name,
-                        score: p.score,
-                        kills: p.kills,
-                        deaths: p.deaths || 0,
-                        color: p.color
+                        name: p.name, score: p.score, kills: p.kills,
+                        deaths: p.deaths || 0, color: p.color
                     }));
-
-                    // If I'm the host, broadcast game over
-                    if (isHost) {
-                        send({ type: "over", scores });
-                    }
-
-                    // End the game
+                    // EVERY player sends game over (not just host)
+                    // This ensures ALL players see the scoreboard
+                    send({ type: "over", scores });
                     endGame(scores);
-
-                }, 1500); // 1.5 second delay for dramatic effect
+                }, 1500);
             }
         }
         // =================== GAME LOOP ===================
@@ -766,7 +744,7 @@
                 myP.vx = Math.max(-spd, Math.min(spd, myP.vx));
                 myP.vy = Math.max(-spd, Math.min(spd, myP.vy));
                 myP.x = Math.max(32, Math.min(canvas.width - 32, myP.x + myP.vx));
-                myP.y = Math.max(32, Math.min(canvas.height - 32, myP.y + myP.vy));
+                myP.y = Math.max(70, Math.min(canvas.height - 50, myP.y + myP.vy));
                 myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
 
                 // Send position every 4 frames (15fps network update)
