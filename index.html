@@ -3,7 +3,7 @@
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Multiplayer Arena</title>
+    <title>Multiplayer Arena - Custom Shooter Skins</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
         * {
@@ -40,8 +40,10 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
             padding: 28px;
-            width: min(400px, 92vw);
-            backdrop-filter: blur(10px)
+            width: min(450px, 92vw);
+            backdrop-filter: blur(10px);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .title {
@@ -120,6 +122,11 @@
             color: #888
         }
 
+        .btn-orange {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white
+        }
+
         .or {
             color: #555;
             text-align: center;
@@ -192,6 +199,35 @@
                 transform: rotate(360deg)
             }
         }
+        
+        .skin-preview {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .skin-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            font-size: 11px;
+            margin: 3px;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f1c40f;
+            border-radius: 10px;
+        }
     </style>
 </head>
 
@@ -201,16 +237,99 @@
         <!-- MENU -->
         <div class="box" id="menuBox">
             <div class="title">⚔️ Multiplayer Arena</div>
-            <div class="sub">3 Lives • 3 Min • Most Kills Wins!<br>Play with friends anywhere! 🌍</div>
+            <div class="sub">3 Lives • 3 Min • Most Kills Wins!<br>Customize Your Shooter! 🎨</div>
             <input id="nameInp" placeholder="Your Name" maxlength="12">
             <button class="btn btn-green" onclick="createRoom()">🏠 Create Room</button>
             <div class="or">— join a friend —</div>
             <input id="codeInp" placeholder="Room Code" maxlength="6"
                 style="text-transform:uppercase;text-align:center;letter-spacing:5px;font-size:20px">
             <button class="btn btn-blue" onclick="joinRoom()">🚪 Join Room</button>
+            <button class="btn btn-orange" onclick="openSkinMenu()" style="margin-top:5px">🎨 Customize Shooter</button>
             <button class="btn btn-gray" onclick="toggleAudio()" style="margin-top:5px">🔊 Sound On</button>
             <button class="btn btn-gray" onclick="showHistory()" style="margin-top:5px">📜 Match History</button>
             <div class="connecting" id="connStatus" style="display:none"><span class="spin"></span>Connecting...</div>
+        </div>
+
+        <!-- SKIN MENU -->
+        <div class="box" id="skinBox" style="display:none">
+            <div class="title">🎨 CUSTOMIZE YOUR SHOOTER</div>
+            <div class="skin-preview" id="skinPreview">
+                <span style="font-size:14px">Your Style:</span>
+                <div style="margin-top:8px">
+                    <span class="skin-badge" id="previewColor">🔴 Red Bullet</span>
+                    <span class="skin-badge" id="previewShape">⚪ Circle</span>
+                    <span class="skin-badge" id="previewTrail">✨ Sparkle</span>
+                </div>
+            </div>
+            
+            <div style="margin-bottom:12px">
+                <div style="color:#f1c40f;font-size:12px;margin-bottom:8px">🎯 BULLET COLOR:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">
+                    <button class="btn" onclick="setSkin('bulletColor',0)" style="background:#ff3333;width:auto;padding:8px 14px;font-size:13px">🔴 Red</button>
+                    <button class="btn" onclick="setSkin('bulletColor',1)" style="background:#3388ff;width:auto;padding:8px 14px;font-size:13px">🔵 Blue</button>
+                    <button class="btn" onclick="setSkin('bulletColor',2)" style="background:#33ff33;width:auto;padding:8px 14px;font-size:13px">🟢 Green</button>
+                    <button class="btn" onclick="setSkin('bulletColor',3)" style="background:#ffdd33;width:auto;padding:8px 14px;font-size:13px">🟡 Yellow</button>
+                    <button class="btn" onclick="setSkin('bulletColor',4)" style="background:#cc33ff;width:auto;padding:8px 14px;font-size:13px">🟣 Purple</button>
+                    <button class="btn" onclick="setSkin('bulletColor',5)" style="background:#ffffff;color:#000;width:auto;padding:8px 14px;font-size:13px">⚪ White</button>
+                    <button class="btn" onclick="setSkin('bulletColor',6)" style="background:#ff8833;width:auto;padding:8px 14px;font-size:13px">🧡 Orange</button>
+                    <button class="btn" onclick="setSkin('bulletColor',7)" style="background:#ff66cc;width:auto;padding:8px 14px;font-size:13px">💗 Pink</button>
+                    <button class="btn" onclick="setSkin('bulletColor',8)" style="background:#00ffcc;width:auto;padding:8px 14px;font-size:13px">💎 Cyan</button>
+                    <button class="btn" onclick="setSkin('bulletColor',9)" style="background:#ff0066;width:auto;padding:8px 14px;font-size:13px">🎀 Rose</button>
+                </div>
+                
+                <div style="color:#f1c40f;font-size:12px;margin-bottom:8px">⬤ BULLET SHAPE:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">
+                    <button class="btn" onclick="setSkin('bulletShape',0)" style="width:auto;padding:8px 14px;font-size:13px">⚪ Circle</button>
+                    <button class="btn" onclick="setSkin('bulletShape',1)" style="width:auto;padding:8px 14px;font-size:13px">🔶 Diamond</button>
+                    <button class="btn" onclick="setSkin('bulletShape',2)" style="width:auto;padding:8px 14px;font-size:13px">⭐ Star</button>
+                    <button class="btn" onclick="setSkin('bulletShape',3)" style="width:auto;padding:8px 14px;font-size:13px">🌙 Crescent</button>
+                    <button class="btn" onclick="setSkin('bulletShape',4)" style="width:auto;padding:8px 14px;font-size:13px">▲ Triangle</button>
+                    <button class="btn" onclick="setSkin('bulletShape',5)" style="width:auto;padding:8px 14px;font-size:13px">⬛ Square</button>
+                    <button class="btn" onclick="setSkin('bulletShape',6)" style="width:auto;padding:8px 14px;font-size:13px">💀 Skull</button>
+                    <button class="btn" onclick="setSkin('bulletShape',7)" style="width:auto;padding:8px 14px;font-size:13px">⚡ Bolt</button>
+                </div>
+                
+                <div style="color:#f1c40f;font-size:12px;margin-bottom:8px">✨ TRAIL EFFECT:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">
+                    <button class="btn" onclick="setSkin('trailType',0)" style="width:auto;padding:8px 14px;font-size:13px">✨ Sparkle</button>
+                    <button class="btn" onclick="setSkin('trailType',1)" style="width:auto;padding:8px 14px;font-size:13px">💨 Smoke</button>
+                    <button class="btn" onclick="setSkin('trailType',2)" style="width:auto;padding:8px 14px;font-size:13px">🔥 Fire</button>
+                    <button class="btn" onclick="setSkin('trailType',3)" style="width:auto;padding:8px 14px;font-size:13px">⚡ Electric</button>
+                    <button class="btn" onclick="setSkin('trailType',4)" style="width:auto;padding:8px 14px;font-size:13px">🍃 Leaf</button>
+                    <button class="btn" onclick="setSkin('trailType',5)" style="width:auto;padding:8px 14px;font-size:13px">❌ None (Best Perf)</button>
+                </div>
+                
+                <div style="color:#f1c40f;font-size:12px;margin-bottom:8px">💥 MUZZLE FLASH:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">
+                    <button class="btn" onclick="setSkin('muzzleFlash',0)" style="width:auto;padding:8px 14px;font-size:13px">🔥 Default</button>
+                    <button class="btn" onclick="setSkin('muzzleFlash',1)" style="width:auto;padding:8px 14px;font-size:13px">🔘 Circle</button>
+                    <button class="btn" onclick="setSkin('muzzleFlash',2)" style="width:auto;padding:8px 14px;font-size:13px">➕ Cross</button>
+                    <button class="btn" onclick="setSkin('muzzleFlash',3)" style="width:auto;padding:8px 14px;font-size:13px">⭐ Star Burst</button>
+                    <button class="btn" onclick="setSkin('muzzleFlash',4)" style="width:auto;padding:8px 14px;font-size:13px">⚡ Minimal</button>
+                </div>
+                
+                <div style="color:#f1c40f;font-size:12px;margin-bottom:8px">💀 HIT EFFECT:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px">
+                    <button class="btn" onclick="setSkin('hitEffect',0)" style="width:auto;padding:8px 14px;font-size:13px">🩸 Blood</button>
+                    <button class="btn" onclick="setSkin('hitEffect',1)" style="width:auto;padding:8px 14px;font-size:13px">✨ Sparks</button>
+                    <button class="btn" onclick="setSkin('hitEffect',2)" style="width:auto;padding:8px 14px;font-size:13px">💀 Skull</button>
+                    <button class="btn" onclick="setSkin('hitEffect',3)" style="width:auto;padding:8px 14px;font-size:13px">🌊 Splash</button>
+                    <button class="btn" onclick="setSkin('hitEffect',4)" style="width:auto;padding:8px 14px;font-size:13px">⚡ Electric</button>
+                </div>
+                
+                <div style="color:#f1c40f;font-size:12px;margin-bottom:8px">😎 GANGSTER STYLE:</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
+                    <button class="btn" onclick="setSkin('gangster',0)" style="width:auto;padding:8px 14px;font-size:13px">🎩 Normal</button>
+                    <button class="btn" onclick="setSkin('gangster',1)" style="width:auto;padding:8px 14px;font-size:13px">🕶️ Mafia</button>
+                    <button class="btn" onclick="setSkin('gangster',2)" style="width:auto;padding:8px 14px;font-size:13px">💀 Skeleton</button>
+                    <button class="btn" onclick="setSkin('gangster',3)" style="width:auto;padding:8px 14px;font-size:13px">👑 King</button>
+                    <button class="btn" onclick="setSkin('gangster',4)" style="width:auto;padding:8px 14px;font-size:13px">🤡 Joker</button>
+                    <button class="btn" onclick="setSkin('gangster',5)" style="width:auto;padding:8px 14px;font-size:13px">🐺 Werewolf</button>
+                </div>
+            </div>
+            
+            <button class="btn btn-green" onclick="closeSkinMenu()">✅ Save & Continue</button>
+            <button class="btn btn-gray" onclick="closeSkinMenu()">Back</button>
         </div>
 
         <!-- LOBBY -->
@@ -223,24 +342,18 @@
             <div id="mapSelector" style="margin-bottom:12px;display:none">
                 <div style="color:#aaa;font-size:11px;margin-bottom:5px">🎮 Select Map:</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <button class="btn" onclick="selectMap(0)"
-                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🏞️ Plain</button>
-                    <button class="btn" onclick="selectMap(1)"
-                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🌀 Maze</button>
-                    <button class="btn" onclick="selectMap(2)"
-                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">⚔️ Crossfire</button>
-                    <button class="btn" onclick="selectMap(3)"
-                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🏟️ Colosseum</button>
-                    <button class="btn" onclick="selectMap(4)"
-                        style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🎯 Dodge</button>
+                    <button class="btn" onclick="selectMap(0)" style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🏞️ Plain</button>
+                    <button class="btn" onclick="selectMap(1)" style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🌀 Maze</button>
+                    <button class="btn" onclick="selectMap(2)" style="background:#2c3e50;padding:8px;font-size:12px;margin:0">⚔️ Crossfire</button>
+                    <button class="btn" onclick="selectMap(3)" style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🏟️ Colosseum</button>
+                    <button class="btn" onclick="selectMap(4)" style="background:#2c3e50;padding:8px;font-size:12px;margin:0">🎯 Dodge</button>
                 </div>
             </div>
             <div id="pList"></div>
-            <button class="btn btn-green" id="startBtn" onclick="hostStart()" style="margin-top:12px;display:none">▶
-                Start Game</button>
-            <button class="btn btn-gray" id="waitBtn" style="margin-top:12px;display:none">⏳ Waiting for host to
-                start...</button>
+            <button class="btn btn-green" id="startBtn" onclick="hostStart()" style="margin-top:12px;display:none">▶ Start Game</button>
+            <button class="btn btn-gray" id="waitBtn" style="margin-top:12px;display:none">⏳ Waiting for host to start...</button>
             <button class="btn btn-purple" onclick="copyCode()">📋 Copy Code</button>
+            <button class="btn btn-orange" onclick="openSkinMenu()" style="margin-top:8px">🎨 Customize Shooter</button>
             <div id="waitMsg" style="color:#aaa;font-size:11px;text-align:center;margin-top:8px"></div>
         </div>
 
@@ -281,11 +394,11 @@
         const MAX_LIVES = 3;
         const MAX_HP = 100;
         const BULLET_DMG = 20;
-        const BULLET_SPD = 15;
-        const PLAYER_SPD = 4;
+        const BULLET_SPD = 13;
+        const PLAYER_SPD = 3.8;
         const RESPAWN_MS = 2500;
-        const MAX_PARTS = 60;
-        const MAX_BULLETS = 25;
+        const MAX_PARTS = 30;
+        const MAX_BULLETS = 20;
         const COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#fd79a8"];
 
         // =================== MAP SYSTEM ===================
@@ -299,6 +412,110 @@
 
         let currentMap = MAPS.PLAIN.id;
         let obstacles = [];
+        
+        // =================== SKIN SYSTEM (Local Only - No Network Sync) ===================
+        let playerSkin = {
+            bulletColor: 0,
+            bulletShape: 0,
+            trailType: 0,
+            muzzleFlash: 0,
+            hitEffect: 0,
+            gangster: 0
+        };
+        
+        const bulletColors = ["#ff3333", "#3388ff", "#33ff33", "#ffdd33", "#cc33ff", "#ffffff", "#ff8833", "#ff66cc", "#00ffcc", "#ff0066"];
+        const bulletColorNames = ["🔴 Red", "🔵 Blue", "🟢 Green", "🟡 Yellow", "🟣 Purple", "⚪ White", "🧡 Orange", "💗 Pink", "💎 Cyan", "🎀 Rose"];
+        
+        const gangsterStyles = ["🎩", "🕶️", "💀", "👑", "🤡", "🐺"];
+        const gangsterNames = ["Normal", "Mafia", "Skeleton", "King", "Joker", "Werewolf"];
+        
+        let savedSkin = localStorage.getItem("playerSkin");
+        if (savedSkin) playerSkin = JSON.parse(savedSkin);
+        
+        function saveSkin() {
+            localStorage.setItem("playerSkin", JSON.stringify(playerSkin));
+            updateSkinPreview();
+        }
+        
+        function setSkin(category, value) {
+            playerSkin[category] = value;
+            saveSkin();
+        }
+        
+        function updateSkinPreview() {
+            let previewColor = document.getElementById("previewColor");
+            let previewShape = document.getElementById("previewShape");
+            let previewTrail = document.getElementById("previewTrail");
+            if (previewColor) previewColor.innerHTML = bulletColorNames[playerSkin.bulletColor] + " Bullet";
+            if (previewShape) {
+                const shapes = ["⚪ Circle", "🔶 Diamond", "⭐ Star", "🌙 Crescent", "▲ Triangle", "⬛ Square", "💀 Skull", "⚡ Bolt"];
+                previewShape.innerHTML = shapes[playerSkin.bulletShape] || "⚪ Circle";
+            }
+            if (previewTrail) {
+                const trails = ["✨ Sparkle", "💨 Smoke", "🔥 Fire", "⚡ Electric", "🍃 Leaf", "❌ None"];
+                previewTrail.innerHTML = trails[playerSkin.trailType] || "✨ Sparkle";
+            }
+        }
+        
+        function openSkinMenu() {
+            document.getElementById("menuBox").style.display = "none";
+            document.getElementById("lobbyBox").style.display = "none";
+            document.getElementById("skinBox").style.display = "block";
+            updateSkinPreview();
+        }
+        
+        function closeSkinMenu() {
+            document.getElementById("skinBox").style.display = "none";
+            if (roomCode) {
+                document.getElementById("lobbyBox").style.display = "block";
+            } else {
+                document.getElementById("menuBox").style.display = "block";
+            }
+        }
+        
+        function drawCustomBullet(ctx, x, y, color, shape) {
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+            
+            if (shape === 0) { // Circle
+                ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+            } else if (shape === 1) { // Diamond
+                ctx.beginPath(); ctx.moveTo(x, y-5); ctx.lineTo(x+5, y); ctx.lineTo(x, y+5); ctx.lineTo(x-5, y); ctx.fill();
+            } else if (shape === 2) { // Star
+                for (let i = 0; i < 5; i++) {
+                    let angle = (i * 72 - 90) * Math.PI / 180;
+                    let x1 = x + Math.cos(angle) * 5;
+                    let y1 = y + Math.sin(angle) * 5;
+                    if (i === 0) ctx.beginPath(); ctx.lineTo(x1, y1);
+                }
+                ctx.fill();
+            } else if (shape === 3) { // Crescent
+                ctx.beginPath(); ctx.arc(x-2, y, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#0a0a1a";
+                ctx.beginPath(); ctx.arc(x+1, y, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = color;
+            } else if (shape === 4) { // Triangle
+                ctx.beginPath(); ctx.moveTo(x, y-5); ctx.lineTo(x+5, y+4); ctx.lineTo(x-5, y+4); ctx.fill();
+            } else if (shape === 5) { // Square
+                ctx.fillRect(x-4, y-4, 8, 8);
+            } else if (shape === 6) { // Skull
+                ctx.font = "14px Arial"; ctx.fillText("💀", x-6, y+5);
+            } else if (shape === 7) { // Bolt
+                ctx.beginPath(); ctx.moveTo(x, y-6); ctx.lineTo(x+4, y); ctx.lineTo(x+1, y); ctx.lineTo(x+5, y+6); ctx.lineTo(x-1, y); ctx.lineTo(x+2, y); ctx.fill();
+            } else {
+                ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+        }
+        
+        function drawGangsterStyle(ctx, x, y, style, color) {
+            ctx.font = "20px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = color;
+            ctx.fillText(gangsterStyles[style], x, y - 50);
+        }
+
         // =================== STATE ===================
         let myId = Math.random().toString(36).substr(2, 8);
         let myName = "Player";
@@ -325,6 +542,11 @@
         let dmgUp = 0;
         let channel = null;
         let channelReady = false;
+        let lastBroadcastTime = 0;
+        const BROADCAST_INTERVAL = 50;
+        let comboCounter = 0;
+        let lastHitTime = 0;
+        let lastKillerId = null;
 
         // Visual effects variables
         let hitFlash = 0;
@@ -373,6 +595,7 @@
         }
 
         function sysChat(t) { addChat("•", t, "#aaa") }
+        
         // =================== MAP FUNCTIONS ===================
         function getMapObstacles(mapId, canvasW, canvasH) {
             let obs = [];
@@ -382,40 +605,17 @@
                 return [];
             }
             else if (mapId === MAPS.MAZE.id) {
-                // Create a real maze with corridors and rooms
                 let w = canvasW;
                 let h = canvasH;
-
-                // Outer boundary walls
-                obs.push({ x: margin - 10, y: margin - 10, w: 20, h: h - 2 * margin + 20 });
-                obs.push({ x: w - margin - 10, y: margin - 10, w: 20, h: h - 2 * margin + 20 });
-                obs.push({ x: margin - 10, y: margin - 10, w: w - 2 * margin + 20, h: 20 });
-                obs.push({ x: margin - 10, y: h - margin - 10, w: w - 2 * margin + 20, h: 20 });
-
-                // Inner maze walls - creates winding path
-                // Top-left room walls
-                obs.push({ x: margin + 80, y: margin, w: 20, h: 120 });
-                obs.push({ x: margin, y: margin + 100, w: 120, h: 20 });
-                obs.push({ x: margin + 160, y: margin + 60, w: 20, h: 100 });
-
-                // Center maze
-                obs.push({ x: w / 2 - 100, y: margin + 80, w: 20, h: 150 });
-                obs.push({ x: w / 2 + 80, y: margin + 80, w: 20, h: 150 });
-                obs.push({ x: margin + 100, y: h / 2 - 50, w: 180, h: 20 });
-                obs.push({ x: w - margin - 180, y: h / 2 - 50, w: 180, h: 20 });
-
-                // Bottom area walls
-                obs.push({ x: margin + 60, y: h - margin - 120, w: 20, h: 120 });
-                obs.push({ x: margin + 140, y: h - margin - 180, w: 120, h: 20 });
-                obs.push({ x: w - margin - 80, y: h - margin - 140, w: 20, h: 100 });
-                obs.push({ x: w - margin - 180, y: h - margin - 80, w: 100, h: 20 });
-
-                // Additional random pillars for cover
-                for (let i = 0; i < 6; i++) {
-                    let px = margin + 80 + Math.random() * (w - 2 * margin - 160);
-                    let py = margin + 80 + Math.random() * (h - 2 * margin - 160);
-                    obs.push({ x: px, y: py, w: 30, h: 30 });
-                }
+                let m = 60;
+                obs.push({ x: m, y: m, w: 80, h: 80 });
+                obs.push({ x: w - m - 80, y: m, w: 80, h: 80 });
+                obs.push({ x: m, y: h - m - 80, w: 80, h: 80 });
+                obs.push({ x: w - m - 80, y: h - m - 80, w: 80, h: 80 });
+                obs.push({ x: w/2 - 60, y: m + 100, w: 120, h: 20 });
+                obs.push({ x: w/2 - 60, y: h - m - 120, w: 120, h: 20 });
+                obs.push({ x: m + 100, y: h/2 - 60, w: 20, h: 120 });
+                obs.push({ x: w - m - 120, y: h/2 - 60, w: 20, h: 120 });
             }
             else if (mapId === MAPS.CROSSFIRE.id) {
                 let centerX = canvasW / 2;
@@ -431,8 +631,8 @@
                 let centerX = canvasW / 2;
                 let centerY = canvasH / 2;
                 let radius = Math.min(canvasW, canvasH) / 2 - 60;
-                for (let i = 0; i < 8; i++) {
-                    let angle = (i / 8) * Math.PI * 2;
+                for (let i = 0; i < 6; i++) {
+                    let angle = (i / 6) * Math.PI * 2;
                     let x = centerX + Math.cos(angle) * radius - 30;
                     let y = centerY + Math.sin(angle) * radius - 30;
                     obs.push({ x: x, y: y, w: 60, h: 60 });
@@ -440,9 +640,11 @@
                 obs.push({ x: centerX - 40, y: centerY - 40, w: 80, h: 80 });
             }
             else if (mapId === MAPS.DODGE.id) {
-                let spacing = 100;
-                for (let x = margin + 60; x < canvasW - margin; x += spacing) {
-                    for (let y = margin + 60; y < canvasH - margin; y += spacing) {
+                let spacing = 150;
+                let startX = margin + 80;
+                let startY = margin + 80;
+                for (let x = startX; x < canvasW - margin && obs.length < 6; x += spacing) {
+                    for (let y = startY; y < canvasH - margin && obs.length < 6; y += spacing) {
                         obs.push({ x: x - 20, y: y - 20, w: 40, h: 40 });
                     }
                 }
@@ -454,64 +656,35 @@
             if (mapId === MAPS.PLAIN.id) {
                 ctx.fillStyle = "#1a4d1a";
                 ctx.fillRect(0, 0, canvasW, canvasH);
-                for (let i = 0; i < 200; i++) {
-                    ctx.fillStyle = "#2d6a2d";
-                    ctx.fillRect(Math.random() * canvasW, Math.random() * canvasH, 2, 2);
-                }
             }
             else if (mapId === MAPS.MAZE.id) {
-                // Dark dungeon floor with grid pattern
                 ctx.fillStyle = "#1a1a2e";
                 ctx.fillRect(0, 0, canvasW, canvasH);
-                // Add stone tile pattern
                 ctx.strokeStyle = "#2a2a4e";
                 ctx.lineWidth = 1;
-                for (let x = 0; x < canvasW; x += 50) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, canvasH);
-                    ctx.stroke();
+                for (let x = 0; x < canvasW; x += 60) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke();
                 }
-                for (let y = 0; y < canvasH; y += 50) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(canvasW, y);
-                    ctx.stroke();
-                }
-                // Add torch glow effect
-                ctx.fillStyle = "rgba(255,100,0,0.05)";
-                for (let i = 0; i < 20; i++) {
-                    ctx.beginPath();
-                    ctx.arc(50 + Math.random() * (canvasW - 100), 50 + Math.random() * (canvasH - 100), 80, 0, Math.PI * 2);
-                    ctx.fill();
+                for (let y = 0; y < canvasH; y += 60) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke();
                 }
             }
             else if (mapId === MAPS.CROSSFIRE.id) {
                 ctx.fillStyle = "#c2b280";
                 ctx.fillRect(0, 0, canvasW, canvasH);
-                for (let i = 0; i < 300; i++) {
-                    ctx.fillStyle = "#d4c4a8";
-                    ctx.fillRect(Math.random() * canvasW, Math.random() * canvasH, 1, 1);
-                }
             }
             else if (mapId === MAPS.ARENA.id) {
                 ctx.fillStyle = "#8b7355";
                 ctx.fillRect(0, 0, canvasW, canvasH);
                 ctx.strokeStyle = "#cd9575";
                 ctx.lineWidth = 2;
-                for (let i = 0; i < 10; i++) {
-                    ctx.beginPath();
-                    ctx.arc(canvasW / 2, canvasH / 2, 50 + i * 40, 0, Math.PI * 2);
-                    ctx.stroke();
+                for (let i = 0; i < 8; i++) {
+                    ctx.beginPath(); ctx.arc(canvasW / 2, canvasH / 2, 50 + i * 40, 0, Math.PI * 2); ctx.stroke();
                 }
             }
             else if (mapId === MAPS.DODGE.id) {
                 ctx.fillStyle = "#4a6741";
                 ctx.fillRect(0, 0, canvasW, canvasH);
-                ctx.fillStyle = "#5c7c53";
-                for (let i = 0; i < 50; i++) {
-                    ctx.fillRect(Math.random() * canvasW, Math.random() * canvasH, 4, 4);
-                }
             }
         }
 
@@ -523,23 +696,12 @@
                 ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
                 ctx.fillStyle = "#7d6e5a";
                 ctx.fillRect(obs.x + 2, obs.y + 2, obs.w - 4, 4);
-                ctx.strokeStyle = "#3d2e1a";
-                ctx.lineWidth = 1;
-                for (let i = 0; i < obs.w; i += 20) {
-                    ctx.beginPath();
-                    ctx.moveTo(obs.x + i, obs.y);
-                    ctx.lineTo(obs.x + i, obs.y + obs.h);
-                    ctx.stroke();
-                }
             }
         }
 
         function checkCollision(x, y, r, obstacles) {
             for (let obs of obstacles) {
-                if (x + r > obs.x && x - r < obs.x + obs.w &&
-                    y + r > obs.y && y - r < obs.y + obs.h) {
-                    return true;
-                }
+                if (x + r > obs.x && x - r < obs.x + obs.w && y + r > obs.y && y - r < obs.y + obs.h) return true;
             }
             return false;
         }
@@ -553,7 +715,7 @@
             if (!audioEnabled) return;
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) { console.log("Web Audio not supported"); audioEnabled = false; }
+            } catch (e) { audioEnabled = false; }
         }
 
         function playBeep(frequency, duration, volume = 0.3) {
@@ -572,11 +734,11 @@
             } catch (e) { }
         }
 
-        function playShoot() { playBeep(880, 0.1, 0.15); }
-        function playHit() { playBeep(440, 0.15, 0.2); }
-        function playPickup() { playBeep(660, 0.08, 0.12); playBeep(880, 0.08, 0.12); }
-        function playKill() { playBeep(550, 0.1, 0.2); playBeep(440, 0.15, 0.15); }
-        function playGameEnd() { playBeep(330, 0.3, 0.2); playBeep(220, 0.5, 0.2); }
+        function playShoot() { playBeep(880, 0.08, 0.12); }
+        function playHit() { playBeep(440, 0.12, 0.15); }
+        function playPickup() { playBeep(660, 0.06, 0.1); playBeep(880, 0.06, 0.1); }
+        function playKill() { playBeep(500 + Math.random() * 100, 0.08, 0.15); playBeep(400 + Math.random() * 80, 0.12, 0.12); }
+        function playGameEnd() { playBeep(330, 0.25, 0.15); playBeep(220, 0.4, 0.15); }
 
         function toggleAudio() {
             audioEnabled = !audioEnabled;
@@ -592,23 +754,19 @@
         // =================== SOCIAL FUNCTIONS ===================
         function checkBadges(player) {
             let earned = [];
-
             if (player.kills === 1 && Object.values(players).filter(p => p.kills > 0).length === 1) {
                 earned.push("firstblood");
                 sysChat(`🏅 ${player.name} earned: FIRST BLOOD!`);
             }
-
             let totalKills = (matchHistory.reduce((sum, m) => sum + (m.playerStats?.[player.id]?.kills || 0), 0) + player.kills);
             if (totalKills >= 10 && !badges[player.id]?.includes("veteran")) {
                 earned.push("veteran");
                 sysChat(`⭐ ${player.name} is a VETERAN!`);
             }
-
             if (player.kills >= 5 && !badges[player.id]?.includes("dominator")) {
                 earned.push("dominator");
                 sysChat(`💀 ${player.name} is DOMINATING!`);
             }
-
             if (earned.length) {
                 if (!badges[player.id]) badges[player.id] = [];
                 badges[player.id].push(...earned);
@@ -644,45 +802,22 @@
                 sb.removeChannel(channel);
                 channel = null;
             }
-
             channelReady = false;
-            console.log("🔌 Joining channel: arena_" + code);
-
-            channel = sb.channel('arena_' + code, {
-                config: {
-                    broadcast: { self: false }
-                }
-            });
-
-            channel.on('broadcast', { event: 'msg' }, (payload) => {
-                console.log("📨 Received:", payload.payload.type);
-                onMsg(payload.payload);
-            });
-
+            channel = sb.channel('arena_' + code, { config: { broadcast: { self: false } } });
+            channel.on('broadcast', { event: 'msg' }, (payload) => { onMsg(payload.payload); });
             channel.subscribe((status) => {
-                console.log("📡 Status:", status);
                 if (status === 'SUBSCRIBED') {
                     channelReady = true;
-                    console.log("✅ Joined room: " + code);
                     document.getElementById("connStatus").style.display = "none";
                 } else if (status === 'CHANNEL_ERROR') {
-                    console.error("❌ Failed to join room");
                     document.getElementById("connStatus").innerHTML = '<span style="color:red">Connection failed! Refresh and try again.</span>';
                 }
             });
         }
 
         function send(data) {
-            if (!channel || !channelReady) {
-                console.warn("⚠️ Channel not ready, cannot send:", data.type);
-                return;
-            }
-            console.log("📤 Sending:", data.type);
-            channel.send({
-                type: 'broadcast',
-                event: 'msg',
-                payload: { ...data, sid: myId }
-            }).catch(err => console.error("Send error:", err));
+            if (!channel || !channelReady) return;
+            channel.send({ type: 'broadcast', event: 'msg', payload: { ...data, sid: myId } }).catch(err => console.error("Send error:", err));
         }
 
         // =================== ROOM SYSTEM ===================
@@ -692,21 +827,12 @@
             myName = document.getElementById("nameInp").value.trim() || "Player";
             roomCode = mkCode();
             isHost = true;
-
-            console.log("🏠 Creating room:", roomCode);
-
             document.getElementById("connStatus").style.display = "block";
             document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Creating room...';
-
             joinChannel(roomCode);
-
             setTimeout(() => {
-                if (channelReady) {
-                    enterLobby();
-                } else {
-                    console.log("Waiting for channel...");
-                    setTimeout(() => enterLobby(), 1000);
-                }
+                if (channelReady) enterLobby();
+                else setTimeout(() => enterLobby(), 1000);
             }, 1500);
         }
 
@@ -716,20 +842,12 @@
             if (c.length < 3) { alert("Enter room code!"); return }
             roomCode = c;
             isHost = false;
-
-            console.log("🚪 Joining room:", roomCode);
-
             document.getElementById("connStatus").style.display = "block";
             document.getElementById("connStatus").innerHTML = '<span class="spin"></span>Joining room...';
-
             joinChannel(roomCode);
-
             setTimeout(() => {
-                if (channelReady) {
-                    enterLobby();
-                } else {
-                    setTimeout(() => enterLobby(), 1000);
-                }
+                if (channelReady) enterLobby();
+                else setTimeout(() => enterLobby(), 1000);
             }, 1500);
         }
 
@@ -738,7 +856,6 @@
             document.getElementById("lobbyBox").style.display = "block";
             document.getElementById("connStatus").style.display = "none";
             document.getElementById("codeShow").textContent = roomCode;
-
             if (isHost) {
                 document.getElementById("startBtn").style.display = "block";
                 document.getElementById("waitBtn").style.display = "none";
@@ -748,44 +865,27 @@
                 document.getElementById("waitBtn").style.display = "block";
                 document.getElementById("mapSelector").style.display = "none";
             }
-
             let ci = Object.keys(players).length % COLORS.length;
             players[myId] = {
-                id: myId, name: myName, color: COLORS[ci],
-                x: 400, y: 300, vx: 0, vy: 0,
-                hp: MAX_HP, lives: MAX_LIVES,
-                score: 0, kills: 0, deaths: 0,
-                angle: 0, alive: true, isHost
+                id: myId, name: myName, color: COLORS[ci], x: 400, y: 300, vx: 0, vy: 0,
+                hp: MAX_HP, lives: MAX_LIVES, score: 0, kills: 0, deaths: 0, angle: 0, alive: true, isHost
             };
             myP = players[myId];
-
-            setTimeout(() => {
-                send({ type: "join", id: myId, name: myName, isHost, currentMap: currentMap });
-                console.log("📢 Sent join message");
-            }, 500);
-
+            setTimeout(() => { send({ type: "join", id: myId, name: myName, isHost, currentMap: currentMap }); }, 500);
             refreshLobby();
         }
+        
         function selectMap(mapId) {
             if (!isHost) return;
             currentMap = mapId;
             let mapName = Object.values(MAPS).find(m => m.id === mapId).name;
             sysChat(`🗺️ Map changed to ${mapName}`);
-
             let btns = document.querySelectorAll("#mapSelector .btn");
             btns.forEach((btn, i) => {
-                if (i === mapId) {
-                    btn.style.background = "#f1c40f";
-                    btn.style.color = "#000";
-                } else {
-                    btn.style.background = "#2c3e50";
-                    btn.style.color = "#888";
-                }
+                if (i === mapId) { btn.style.background = "#f1c40f"; btn.style.color = "#000"; }
+                else { btn.style.background = "#2c3e50"; btn.style.color = "#888"; }
             });
-
-            // Send to all players
             send({ type: "mapChange", mapId: mapId });
-            // Also send sync for any late joiners
             send({ type: "mapSync", mapId: mapId });
         }
 
@@ -800,7 +900,6 @@
             let el = document.getElementById("pList");
             el.innerHTML = "";
             let ps = Object.values(players);
-            console.log("🔄 Refreshing lobby, players:", ps.length);
             ps.forEach(p => {
                 let d = document.createElement("div");
                 d.className = "pi";
@@ -823,8 +922,6 @@ ${p.id === myId ? "(you)" : ""}
         // =================== MESSAGES ===================
         function onMsg(d) {
             if (d.sid === myId) return;
-            console.log("Processing:", d.type);
-
             if (d.type === "join") {
                 let ci = Object.keys(players).length % COLORS.length;
                 if (!players[d.id]) {
@@ -832,51 +929,28 @@ ${p.id === myId ? "(you)" : ""}
                         id: d.id, name: d.name, color: COLORS[ci],
                         x: 300 + Math.random() * 200, y: 200 + Math.random() * 200,
                         vx: 0, vy: 0, hp: MAX_HP, lives: MAX_LIVES,
-                        score: 0, kills: 0, deaths: 0,
-                        angle: 0, alive: true, isHost: d.isHost
+                        score: 0, kills: 0, deaths: 0, angle: 0, alive: true, isHost: d.isHost
                     };
-                    console.log("➕ Player joined:", d.name);
-
-                    // If I am host, send current map to the new player
                     if (isHost && d.currentMap !== undefined) {
-                        setTimeout(() => {
-                            send({ type: "mapSync", mapId: currentMap });
-                            console.log("🗺️ Sent map sync to new player:", currentMap);
-                        }, 500);
+                        setTimeout(() => { send({ type: "mapSync", mapId: currentMap }); }, 500);
                     }
                 }
                 refreshLobby();
-                send({
-                    type: "info", id: myId, name: myName, isHost,
-                    score: myP?.score || 0, kills: myP?.kills || 0,
-                    deaths: myP?.deaths || 0, lives: myP?.lives || MAX_LIVES, hp: myP?.hp || MAX_HP
-                });
+                send({ type: "info", id: myId, name: myName, isHost, score: myP?.score || 0, kills: myP?.kills || 0, deaths: myP?.deaths || 0, lives: myP?.lives || MAX_LIVES, hp: myP?.hp || MAX_HP });
                 sysChat("⚡ " + d.name + " joined!");
             }
             else if (d.type === "info") {
                 if (!players[d.id]) {
                     let ci = Object.keys(players).length % COLORS.length;
                     players[d.id] = {
-                        id: d.id, name: d.name, color: COLORS[ci],
-                        x: 300, y: 200, vx: 0, vy: 0,
-                        hp: d.hp, lives: d.lives, score: d.score,
-                        kills: d.kills, deaths: d.deaths || 0, angle: 0,
-                        alive: true, isHost: d.isHost
+                        id: d.id, name: d.name, color: COLORS[ci], x: 300, y: 200, vx: 0, vy: 0,
+                        hp: d.hp, lives: d.lives, score: d.score, kills: d.kills, deaths: d.deaths || 0, angle: 0, alive: true, isHost: d.isHost
                     };
                     refreshLobby();
-
-                    // If I am host, send current map to this player
-                    if (isHost) {
-                        setTimeout(() => {
-                            send({ type: "mapSync", mapId: currentMap });
-                            console.log("🗺️ Sent map sync via info reply");
-                        }, 500);
-                    }
+                    if (isHost) { setTimeout(() => { send({ type: "mapSync", mapId: currentMap }); }, 500); }
                 }
             }
-            else if (d.type === "start") {
-                doStartGame();
-            }
+            else if (d.type === "start") { doStartGame(); }
             else if (d.type === "pos") {
                 let p = players[d.id];
                 if (p) {
@@ -888,8 +962,7 @@ ${p.id === myId ? "(you)" : ""}
             else if (d.type === "bullet") {
                 if (bullets.length < MAX_BULLETS) {
                     bullets.push({
-                        x: d.x, y: d.y, vx: d.vx, vy: d.vy,
-                        oid: d.oid, oname: d.oname, ocolor: d.ocolor,
+                        x: d.x, y: d.y, vx: d.vx, vy: d.vy, oid: d.oid, oname: d.oname, ocolor: d.ocolor,
                         color: d.ocolor, dmg: d.dmg, life: d.life || 55
                     });
                 }
@@ -897,103 +970,62 @@ ${p.id === myId ? "(you)" : ""}
             else if (d.type === "gotHit") {
                 if (d.targetId === myId && myP && myP.alive) {
                     if (spawnShield > 0 || shieldOn) return;
-
                     let dmg = d.damage || BULLET_DMG;
                     myP.hp -= dmg;
                     shakeAmt = 8;
                     hitFlash = 12;
                     hitMarker = 8;
+                    lastKillerId = d.shooterId;
                     if (d.shooterId !== myId) playHit();
-
                     addPart(myP.x, myP.y - 30, 0, -1.5, "#e74c3c", 0, 40, "dmgtext");
-
-                    let n = Math.min(5, MAX_PARTS - particles.length);
+                    let n = Math.min(3, MAX_PARTS - particles.length);
                     for (let j = 0; j < n; j++) {
                         let a = Math.random() * Math.PI * 2;
                         addPart(d.bx || myP.x, d.by || myP.y, Math.cos(a) * 4, Math.sin(a) * 3, "#e74c3c", 3, 22, "blood");
                     }
-
                     if (myP.hp <= 0) {
-                        myP.hp = 0;
-                        myP.alive = false;
-                        myP.lives--;
-                        myP.deaths = (myP.deaths || 0) + 1;
-
-                        let n2 = Math.min(10, MAX_PARTS - particles.length);
+                        myP.hp = 0; myP.alive = false; myP.lives--; myP.deaths = (myP.deaths || 0) + 1;
+                        let n2 = Math.min(6, MAX_PARTS - particles.length);
                         for (let j = 0; j < n2; j++) {
                             let a = Math.random() * Math.PI * 2;
                             let s = Math.random() * 6 + 2;
-                            addPart(myP.x, myP.y, Math.cos(a) * s, Math.sin(a) * s,
-                                Math.random() > 0.5 ? "#e74c3c" : "#ff7675", 4, 40, "blood");
+                            addPart(myP.x, myP.y, Math.cos(a) * s, Math.sin(a) * s, Math.random() > 0.5 ? "#e74c3c" : "#ff7675", 4, 40, "blood");
                         }
-
                         addKF(d.shooterName || "???", myName, d.shooterColor || "#e74c3c");
-                        send({
-                            type: "kill", kid: d.shooterId, kname: d.shooterName,
-                            vname: myName, kcolor: d.shooterColor
-                        });
-
+                        send({ type: "kill", kid: d.shooterId, kname: d.shooterName, vname: myName, kcolor: d.shooterColor });
                         if (myP.lives > 0) {
                             sysChat("💀 Killed by " + d.shooterName + "! (" + myP.lives + "❤️ left)");
-
                             setTimeout(() => {
                                 if (myP && gameOn && myP.lives > 0) {
-                                    myP.alive = true;
-                                    myP.hp = MAX_HP;
+                                    myP.alive = true; myP.hp = MAX_HP;
                                     myP.x = 80 + Math.random() * (canvas.width - 160);
                                     myP.y = 70 + Math.random() * (canvas.height - 140);
                                     spawnShield = 150;
                                     sysChat("✨ Respawned!");
                                 }
                             }, RESPAWN_MS);
-                        } else {
-                            sysChat("☠️ All lives lost! Spectating...");
-                            checkLastStanding();
-                        }
+                        } else { sysChat("☠️ All lives lost! Spectating..."); checkLastStanding(); }
                     }
                 }
             }
-            else if (d.type === "kill") {
-                addKF(d.kname, d.vname, d.kcolor);
-            }
-            else if (d.type === "tick") {
-                gameTimer = d.t;
-            }
-            else if (d.type === "over") {
-                endGame(d.scores);
-            }
-            else if (d.type === "chat") {
-                addChat(d.name, d.text, d.color);
-            }
-            else if (d.type === "item") {
-                items.push(d.it);
-            }
-            else if (d.type === "itemGone") {
-                items = items.filter(it => it.id !== d.iid);
-            }
+            else if (d.type === "kill") { addKF(d.kname, d.vname, d.kcolor); }
+            else if (d.type === "tick") { gameTimer = d.t; }
+            else if (d.type === "over") { endGame(d.scores); }
+            else if (d.type === "chat") { addChat(d.name, d.text, d.color); }
+            else if (d.type === "item") { items.push(d.it); }
+            else if (d.type === "itemGone") { items = items.filter(it => it.id !== d.iid); }
             else if (d.type === "leave") {
-                if (players[d.id]) {
-                    sysChat("👋 " + players[d.id].name + " left");
-                    delete players[d.id];
-                    refreshLobby();
-                }
+                if (players[d.id]) { sysChat("👋 " + players[d.id].name + " left"); delete players[d.id]; refreshLobby(); }
             }
             else if (d.type === "mapChange") {
                 currentMap = d.mapId;
                 let mapName = Object.values(MAPS).find(m => m.id === currentMap).name;
                 sysChat(`🗺️ Map changed to ${mapName}`);
-                console.log("🗺️ Map changed to:", mapName);
-                // Update button styles for host (if host sees this)
                 if (isHost) {
                     let btns = document.querySelectorAll("#mapSelector .btn");
                     btns.forEach((btn, i) => {
-                        if (i === currentMap) {
-                            btn.style.background = "#f1c40f";
-                            btn.style.color = "#000";
-                        } else {
-                            btn.style.background = "#2c3e50";
-                            btn.style.color = "#888";
-                        }
+                        if (i === currentMap) { btn.style.background = "#f1c40f"; btn.style.color = "#000"; }
+                        else { btn.style.background = "#2c3e50"; btn.style.color = "#888"; }
                     });
                 }
             }
@@ -1001,24 +1033,18 @@ ${p.id === myId ? "(you)" : ""}
                 currentMap = d.mapId;
                 let mapName = Object.values(MAPS).find(m => m.id === currentMap).name;
                 sysChat(`🗺️ Map set to ${mapName}`);
-                console.log("🗺️ Map synced to:", mapName);
             }
             else if (d.type === "emote") {
                 addChat(d.name, d.emote, d.color);
                 let p = players[d.id];
-                if (p) {
-                    streakEffects.push({ x: p.x, y: p.y - 40, text: d.emote, color: d.color, life: 30 });
-                }
+                if (p) { streakEffects.push({ x: p.x, y: p.y - 40, text: d.emote, color: d.color, life: 30 }); }
             }
         }
 
         // =================== START GAME ===================
         function hostStart() {
             if (!isHost) return;
-            if (Object.keys(players).length < 2) {
-                alert("Need at least 2 players!");
-                return;
-            }
+            if (Object.keys(players).length < 2) { alert("Need at least 2 players!"); return; }
             send({ type: "start" });
             doStartGame();
         }
@@ -1028,27 +1054,22 @@ ${p.id === myId ? "(you)" : ""}
             gameOn = true;
             gameTimer = GAME_TIME;
             bullets = []; particles = []; items = []; killFeed = [];
-
-            // Generate obstacles
             obstacles = getMapObstacles(currentMap, canvas.width, canvas.height);
-
             let ps = Object.values(players);
             ps.forEach((p, i) => {
                 let ang = (i / ps.length) * Math.PI * 2;
                 let spawnX = canvas.width / 2 + Math.cos(ang) * 180;
                 let spawnY = canvas.height / 2 + Math.sin(ang) * 180;
                 let attempts = 0;
-                while (checkCollision(spawnX, spawnY, 20, obstacles) && attempts < 20) {
+                while (checkCollision(spawnX, spawnY, 20, obstacles) && attempts < 15) {
                     spawnX = 80 + Math.random() * (canvas.width - 160);
                     spawnY = 70 + Math.random() * (canvas.height - 140);
                     attempts++;
                 }
-                p.x = spawnX;
-                p.y = spawnY;
+                p.x = spawnX; p.y = spawnY;
                 p.hp = MAX_HP; p.lives = MAX_LIVES;
                 p.alive = true; p.score = 0; p.kills = 0; p.deaths = 0;
             });
-
             if (isHost) {
                 timerInt = setInterval(() => {
                     gameTimer--;
@@ -1056,17 +1077,13 @@ ${p.id === myId ? "(you)" : ""}
                     if (gameTimer > 0 && gameTimer % 12 === 0) spawnItem();
                     if (gameTimer <= 0) {
                         clearInterval(timerInt);
-                        let scores = Object.values(players).map(p => ({
-                            name: p.name, score: p.score, kills: p.kills,
-                            deaths: p.deaths || 0, color: p.color
-                        }));
+                        let scores = Object.values(players).map(p => ({ name: p.name, score: p.score, kills: p.kills, deaths: p.deaths || 0, color: p.color }));
                         send({ type: "over", scores });
                         endGame(scores);
                     }
                 }, 1000);
-                setTimeout(() => { spawnItem(); spawnItem(); spawnItem(); }, 500);
+                setTimeout(() => { spawnItem(); spawnItem(); }, 500);
             }
-
             sysChat("🎮 FIGHT! 3 minutes!");
             requestAnimationFrame(gameLoop);
         }
@@ -1087,13 +1104,12 @@ ${p.id === myId ? "(you)" : ""}
         function applyItem(type) {
             playPickup();
             if (!myP) return;
-            if (type === "health") { myP.hp = Math.min(MAX_HP, myP.hp + 40); sysChat("❤️ +40 HP!") }
-            else if (type === "speed") { speedUp = 360; sysChat("⚡ Speed 6s!") }
-            else if (type === "shield") { shieldOn = true; shieldT = 300; sysChat("🛡️ Shield 5s!") }
-            else if (type === "dmg") { dmgUp = 360; sysChat("💥 2x Damage 6s!") }
+            if (type === "health") { myP.hp = Math.min(MAX_HP, myP.hp + 40); sysChat("❤️ +40 HP!"); }
+            else if (type === "speed") { speedUp = 360; sysChat("⚡ Speed 6s!"); }
+            else if (type === "shield") { shieldOn = true; shieldT = 300; sysChat("🛡️ Shield 5s!"); }
+            else if (type === "dmg") { dmgUp = 360; sysChat("💥 2x Damage 6s!"); }
         }
 
-        // =================== CHECK LAST PLAYER STANDING ===================
         function checkLastStanding() {
             if (!gameOn) return;
             let alivePlayers = Object.values(players).filter(p => p.lives > 0);
@@ -1102,13 +1118,8 @@ ${p.id === myId ? "(you)" : ""}
                 setTimeout(() => {
                     if (!gameOn) return;
                     if (timerInt) clearInterval(timerInt);
-                    if (alivePlayers.length === 1) {
-                        alivePlayers[0].score += 50;
-                    }
-                    let scores = Object.values(players).map(p => ({
-                        name: p.name, score: p.score, kills: p.kills,
-                        deaths: p.deaths || 0, color: p.color
-                    }));
+                    if (alivePlayers.length === 1) alivePlayers[0].score += 50;
+                    let scores = Object.values(players).map(p => ({ name: p.name, score: p.score, kills: p.kills, deaths: p.deaths || 0, color: p.color }));
                     send({ type: "over", scores });
                     endGame(scores);
                 }, 1500);
@@ -1119,10 +1130,9 @@ ${p.id === myId ? "(you)" : ""}
         let lastT = 0;
         function gameLoop(ts) {
             if (!gameOn) return;
-            if (ts - lastT < 14) { requestAnimationFrame(gameLoop); return }
+            if (ts - lastT < 16) { requestAnimationFrame(gameLoop); return }
             lastT = ts;
             frame++;
-
             let sx = 0, sy = 0;
             if (shakeAmt > 0) {
                 sx = (Math.random() - 0.5) * shakeAmt;
@@ -1130,88 +1140,55 @@ ${p.id === myId ? "(you)" : ""}
                 shakeAmt *= 0.8;
                 if (shakeAmt < 0.5) shakeAmt = 0;
             }
-
             ctx.save();
             ctx.translate(sx, sy);
-
-            // Draw map background
             drawMap(ctx, currentMap, canvas.width, canvas.height);
-
-            // Draw obstacles
             drawObstacles(ctx, obstacles);
-
-            // Grid overlay
             ctx.fillStyle = "rgba(255,255,255,0.03)";
-            for (let x = 0; x < canvas.width; x += 60) {
-                ctx.fillRect(x, 0, 1, canvas.height);
-            }
-            for (let y = 0; y < canvas.height; y += 60) {
-                ctx.fillRect(0, y, canvas.width, 1);
-            }
-
-            // Border
+            for (let x = 0; x < canvas.width; x += 60) ctx.fillRect(x, 0, 1, canvas.height);
+            for (let y = 0; y < canvas.height; y += 60) ctx.fillRect(0, y, canvas.width, 1);
             ctx.strokeStyle = "rgba(231,76,60,0.4)";
             ctx.lineWidth = 3;
             ctx.strokeRect(22, 22, canvas.width - 44, canvas.height - 44);
-            // Timers
             if (spawnShield > 0) spawnShield--;
             if (speedUp > 0) speedUp--;
-            if (shieldT > 0) { shieldT--; if (shieldT <= 0) shieldOn = false }
+            if (shieldT > 0) { shieldT--; if (shieldT <= 0) shieldOn = false; }
             if (dmgUp > 0) dmgUp--;
             if (shootCD > 0) shootCD--;
             if (dashCooldown > 0) dashCooldown--;
-            // My movement
             if (myP && myP.alive) {
-                let spd = speedUp > 0 ? 7 : PLAYER_SPD;
-                if (keys["w"] || keys["ArrowUp"]) myP.vy -= 0.55;
-                if (keys["s"] || keys["ArrowDown"]) myP.vy += 0.55;
-                if (keys["a"] || keys["ArrowLeft"]) myP.vx -= 0.55;
-                if (keys["d"] || keys["ArrowRight"]) myP.vx += 0.55;
+                let spd = speedUp > 0 ? 6.5 : PLAYER_SPD;
+                if (keys["w"] || keys["ArrowUp"]) myP.vy -= 0.5;
+                if (keys["s"] || keys["ArrowDown"]) myP.vy += 0.5;
+                if (keys["a"] || keys["ArrowLeft"]) myP.vx -= 0.5;
+                if (keys["d"] || keys["ArrowRight"]) myP.vx += 0.5;
                 myP.vx *= 0.86; myP.vy *= 0.86;
                 myP.vx = Math.max(-spd, Math.min(spd, myP.vx));
                 myP.vy = Math.max(-spd, Math.min(spd, myP.vy));
-
-                // Apply collision
                 let newX = myP.x + myP.vx;
                 let newY = myP.y + myP.vy;
-
-                if (!checkCollision(newX, myP.y, 18, obstacles)) {
-                    myP.x = newX;
-                } else {
-                    myP.vx *= -0.3;
-                }
-
-                if (!checkCollision(myP.x, newY, 18, obstacles)) {
-                    myP.y = newY;
-                } else {
-                    myP.vy *= -0.3;
-                }
-
+                if (!checkCollision(newX, myP.y, 18, obstacles)) myP.x = newX;
+                else myP.vx *= -0.3;
+                if (!checkCollision(myP.x, newY, 18, obstacles)) myP.y = newY;
+                else myP.vy *= -0.3;
                 myP.x = Math.max(32, Math.min(canvas.width - 32, myP.x));
                 myP.y = Math.max(70, Math.min(canvas.height - 50, myP.y));
                 myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
-
-                // Trail recording
-                if (frame % 5 === 0 && (Math.abs(myP.x - lastX) > 5 || Math.abs(myP.y - lastY) > 5)) {
-                    trailParticles.push({ x: myP.x, y: myP.y, life: 15, color: myP.color });
+                if (frame % 5 === 0 && (Math.abs(myP.x - lastX) > 8 || Math.abs(myP.y - lastY) > 8)) {
+                    trailParticles.push({ x: myP.x, y: myP.y, life: 12, color: myP.color });
                     lastX = myP.x; lastY = myP.y;
                 }
-                if (trailParticles.length > 30) trailParticles.shift();
-
-                // Send position
-                if (frame % 4 === 0) {
+                if (trailParticles.length > 25) trailParticles.shift();
+                let now = Date.now();
+                if (frame % 6 === 0 && (now - lastBroadcastTime) > BROADCAST_INTERVAL) {
+                    lastBroadcastTime = now;
                     send({
-                        type: "pos", id: myId,
-                        x: Math.round(myP.x), y: Math.round(myP.y),
-                        vx: Math.round(myP.vx * 100) / 100,
-                        vy: Math.round(myP.vy * 100) / 100,
-                        angle: Math.round(myP.angle * 100) / 100,
-                        hp: myP.hp, lives: myP.lives,
+                        type: "pos", id: myId, x: Math.round(myP.x), y: Math.round(myP.y),
+                        vx: Math.round(myP.vx * 10) / 10, vy: Math.round(myP.vy * 10) / 10,
+                        angle: Math.round(myP.angle * 10) / 10, hp: myP.hp, lives: myP.lives,
                         score: myP.score, kills: myP.kills, deaths: myP.deaths, alive: myP.alive
                     });
                 }
-
-                // Item pickup
                 for (let i = items.length - 1; i >= 0; i--) {
                     let it = items[i];
                     let dx = myP.x - it.x, dy = myP.y - it.y;
@@ -1222,8 +1199,6 @@ ${p.id === myId ? "(you)" : ""}
                     }
                 }
             }
-
-            // Items
             items.forEach(it => {
                 it.pulse += 0.05;
                 let cols = { health: "#e74c3c", speed: "#f39c12", shield: "#3498db", dmg: "#9b59b6" };
@@ -1239,17 +1214,13 @@ ${p.id === myId ? "(you)" : ""}
                 ctx.font = "14px Arial"; ctx.textAlign = "center";
                 ctx.fillText(icons[it.type] || "?", it.x, it.y + 5);
             });
-
-            // Players
             Object.values(players).forEach(p => {
                 if (!p.alive) {
                     ctx.globalAlpha = 0.25; ctx.font = "22px Arial"; ctx.textAlign = "center";
                     ctx.fillText("💀", p.x, p.y + 8); ctx.globalAlpha = 1;
                     return;
                 }
-
                 let isMe = p.id === myId;
-
                 if (isMe && spawnShield > 0) {
                     ctx.globalAlpha = 0.25 + Math.sin(frame * 0.2) * 0.15;
                     ctx.beginPath(); ctx.arc(p.x, p.y, 28, 0, Math.PI * 2);
@@ -1257,43 +1228,41 @@ ${p.id === myId ? "(you)" : ""}
                     ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 2; ctx.stroke();
                     ctx.globalAlpha = 1;
                 }
-
                 if (isMe && shieldOn) {
                     ctx.globalAlpha = 0.4 + Math.sin(frame * 0.15) * 0.2;
                     ctx.beginPath(); ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
                     ctx.strokeStyle = "#3498db"; ctx.lineWidth = 3; ctx.stroke();
                     ctx.globalAlpha = 1;
                 }
-
+                if (p.hp < 30 && p.alive) {
+                    ctx.globalAlpha = 0.8; ctx.font = "18px Arial"; ctx.textAlign = "center";
+                    ctx.fillText("😡", p.x, p.y - 35); ctx.globalAlpha = 1;
+                }
+                drawGangsterStyle(ctx, p.x, p.y, playerSkin.gangster, p.color);
                 ctx.fillStyle = "rgba(0,0,0,0.25)";
                 ctx.beginPath(); ctx.ellipse(p.x, p.y + 19, 14, 5, 0, 0, Math.PI * 2); ctx.fill();
-
                 ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
                 let bg = ctx.createRadialGradient(p.x - 3, p.y - 3, 3, p.x, p.y, 18);
                 bg.addColorStop(0, p.color); bg.addColorStop(1, p.color + "88");
                 ctx.fillStyle = bg; ctx.fill();
                 ctx.strokeStyle = isMe ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.3)";
                 ctx.lineWidth = isMe ? 2.5 : 1.5; ctx.stroke();
-
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
                 ctx.fillStyle = "#444"; ctx.fillRect(8, -5, 22, 10);
                 ctx.fillStyle = p.color; ctx.fillRect(8, -3, 20, 6);
                 ctx.restore();
-
                 ctx.fillStyle = "white";
                 ctx.beginPath(); ctx.arc(p.x - 5, p.y - 3, 3, 0, Math.PI * 2); ctx.fill();
                 ctx.beginPath(); ctx.arc(p.x + 5, p.y - 3, 3, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = "#111";
                 ctx.beginPath(); ctx.arc(p.x - 5 + Math.cos(p.angle), p.y - 3 + Math.sin(p.angle), 1.5, 0, Math.PI * 2); ctx.fill();
                 ctx.beginPath(); ctx.arc(p.x + 5 + Math.cos(p.angle), p.y - 3 + Math.sin(p.angle), 1.5, 0, Math.PI * 2); ctx.fill();
-
                 ctx.fillStyle = "rgba(0,0,0,0.75)";
                 let nw = ctx.measureText(p.name).width + 12;
                 ctx.beginPath(); ctx.roundRect(p.x - nw / 2, p.y - 44, nw, 17, 4); ctx.fill();
                 ctx.fillStyle = isMe ? "#f1c40f" : "white";
                 ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
                 ctx.fillText(p.name, p.x, p.y - 30);
-
                 let bw = 40;
                 ctx.fillStyle = "rgba(0,0,0,0.6)";
                 ctx.beginPath(); ctx.roundRect(p.x - bw / 2, p.y - 53, bw, 5, 2); ctx.fill();
@@ -1302,15 +1271,10 @@ ${p.id === myId ? "(you)" : ""}
                     ctx.fillStyle = hpPct > 0.6 ? "#2ecc71" : hpPct > 0.3 ? "#f39c12" : "#e74c3c";
                     ctx.beginPath(); ctx.roundRect(p.x - bw / 2, p.y - 53, bw * hpPct, 5, 2); ctx.fill();
                 }
-
                 ctx.fillStyle = "white"; ctx.font = "7px Arial";
                 ctx.fillText(p.hp, p.x, p.y - 50);
-
                 ctx.font = "10px Arial";
-                for (let i = 0; i < MAX_LIVES; i++) {
-                    ctx.fillText(i < p.lives ? "❤️" : "🖤", p.x - 12 + i * 12, p.y - 58);
-                }
-
+                for (let i = 0; i < MAX_LIVES; i++) ctx.fillText(i < p.lives ? "❤️" : "🖤", p.x - 12 + i * 12, p.y - 58);
                 if (p.score > 0) {
                     ctx.fillStyle = p.color + "dd";
                     ctx.beginPath(); ctx.arc(p.x + 20, p.y - 18, 11, 0, Math.PI * 2); ctx.fill();
@@ -1318,106 +1282,83 @@ ${p.id === myId ? "(you)" : ""}
                     ctx.fillText(p.score, p.x + 20, p.y - 14);
                 }
             });
-
-            // Bullets
             let newBullets = [];
             for (let i = 0; i < bullets.length; i++) {
                 let b = bullets[i];
                 b.x += b.vx; b.y += b.vy; b.life--;
-
-                if (b.x < 20 || b.x > canvas.width - 20 || b.y < 20 || b.y > canvas.height - 20 || b.life <= 0)
-                    continue;
-
-                ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
-                ctx.fillStyle = b.color || b.ocolor || "#fff"; ctx.fill();
-                ctx.shadowColor = b.color || b.ocolor; ctx.shadowBlur = 6; ctx.fill(); ctx.shadowBlur = 0;
-
-                // Check bullet collision with walls
+                if (b.x < 20 || b.x > canvas.width - 20 || b.y < 20 || b.y > canvas.height - 20 || b.life <= 0) continue;
+                let bulletColor = b.oid === myId ? bulletColors[playerSkin.bulletColor] : b.color;
+                let bulletShape = b.oid === myId ? playerSkin.bulletShape : 0;
+                drawCustomBullet(ctx, b.x, b.y, bulletColor, bulletShape);
+                let skipWallCheck = (b.x > 100 && b.x < canvas.width - 100 && b.y > 100 && b.y < canvas.height - 100);
                 let bulletHitWall = false;
-                for (let obs of obstacles) {
-                    if (b.x + 5 > obs.x && b.x - 5 < obs.x + obs.w &&
-                        b.y + 5 > obs.y && b.y - 5 < obs.y + obs.h) {
-                        bulletHitWall = true;
-                        for (let j = 0; j < 3; j++) {
-                            addPart(b.x, b.y, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, "#888", 2, 10, "dust");
+                if (!skipWallCheck) {
+                    for (let obs of obstacles) {
+                        if (b.x + 5 > obs.x && b.x - 5 < obs.x + obs.w && b.y + 5 > obs.y && b.y - 5 < obs.y + obs.h) {
+                            bulletHitWall = true;
+                            for (let j = 0; j < 2; j++) addPart(b.x, b.y, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, "#888", 2, 8, "dust");
+                            break;
                         }
-                        break;
                     }
                 }
                 if (bulletHitWall) continue;
-
                 let hitSomething = false;
-
                 if (b.oid === myId) {
                     for (let pid in players) {
                         if (pid === myId) continue;
                         let p = players[pid];
                         if (!p.alive) continue;
-
                         let dx = b.x - p.x, dy = b.y - p.y;
                         if (Math.sqrt(dx * dx + dy * dy) < 22) {
                             hitSomething = true;
-
-                            // HEADSHOT DETECTION
+                            let now = Date.now();
+                            if (now - lastHitTime < 3000) {
+                                comboCounter++;
+                                if (comboCounter >= 3) {
+                                    addStreakEffect(myP.x, myP.y - 60, `${comboCounter}x COMBO!`, "#ff6600");
+                                    myP.score += comboCounter * 2;
+                                }
+                            } else comboCounter = 1;
+                            lastHitTime = now;
                             let isHeadshot = (b.y - p.y) < -15;
                             let damage = (b.dmg || BULLET_DMG) * (isHeadshot ? 2 : 1);
-
                             if (isHeadshot) {
                                 myP.score += 15;
                                 addPart(p.x, p.y - 25, 0, -2, "#ffaa00", 0, 40, "headshot");
                                 sysChat(`🎯 HEADSHOT! +10 bonus!`);
                                 addKF(myName, p.name + " 💀 HEADSHOT!", myP.color);
-                            } else {
-                                myP.score += 5;
-                            }
-
+                            } else myP.score += 5;
                             addPart(myP.x, myP.y - 25, 0, -1, "#f1c40f", 0, 35, "score");
-
-                            let n = Math.min(5, MAX_PARTS - particles.length);
+                            let n = Math.min(3, MAX_PARTS - particles.length);
                             for (let j = 0; j < n; j++) {
                                 let a = Math.random() * Math.PI * 2;
                                 addPart(b.x, b.y, Math.cos(a) * 4, Math.sin(a) * 3, "#e74c3c", 3, 20, "blood");
                             }
-
-                            send({
-                                type: "gotHit",
-                                targetId: pid,
-                                damage: damage,
-                                shooterId: myId,
-                                shooterName: myName,
-                                shooterColor: myP.color,
-                                bx: b.x, by: b.y
-                            });
-
+                            send({ type: "gotHit", targetId: pid, damage: damage, shooterId: myId, shooterName: myName, shooterColor: myP.color, bx: b.x, by: b.y });
                             p.hp = Math.max(0, p.hp - (b.dmg || BULLET_DMG));
-
                             if (p.hp <= 0) {
-                                p.alive = false;
-                                p.lives--;
-                                myP.score += 20;
-                                myP.kills++;
-
-                                // HEALTH ON KILL
+                                p.alive = false; p.lives--; myP.score += 20; myP.kills++;
+                                if (lastKillerId === p.id) {
+                                    addStreakEffect(myP.x, myP.y - 55, "REVENGE!", "#ff0000");
+                                    myP.score += 25;
+                                    sysChat(`💀 REVENGE! +25 points!`);
+                                }
                                 myP.hp = Math.min(MAX_HP, myP.hp + 20);
                                 addPart(myP.x, myP.y - 30, 0, -2, "#2ecc71", 0, 40, "heal");
                                 sysChat(`💚 +20 HP for killing ${p.name}!`);
-
                                 if (myP.kills % 3 === 0 && myP.kills > 0) {
                                     addStreakEffect(myP.x, myP.y - 50, `${myP.kills} KILL STREAK!`, "#f1c40f");
                                     sysChat(`🔥 ${myName} is on a ${myP.kills} kill streak!`);
                                 }
                                 playKill();
                                 checkBadges(myP);
-
                                 addPart(myP.x, myP.y - 40, 0, -1, "#2ecc71", 0, 50, "killtext");
                                 addKF(myName, p.name, myP.color);
-
-                                let n3 = Math.min(8, MAX_PARTS - particles.length);
+                                let n3 = Math.min(5, MAX_PARTS - particles.length);
                                 for (let j = 0; j < n3; j++) {
                                     let a = Math.random() * Math.PI * 2;
                                     let s = Math.random() * 6 + 2;
-                                    addPart(p.x, p.y, Math.cos(a) * s, Math.sin(a) * s,
-                                        Math.random() > 0.5 ? "#e74c3c" : "#ff7675", 4, 40, "blood");
+                                    addPart(p.x, p.y, Math.cos(a) * s, Math.sin(a) * s, Math.random() > 0.5 ? "#e74c3c" : "#ff7675", 4, 40, "blood");
                                 }
                                 checkLastStanding();
                             }
@@ -1425,105 +1366,58 @@ ${p.id === myId ? "(you)" : ""}
                         }
                     }
                 }
-
                 if (!hitSomething) newBullets.push(b);
             }
             bullets = newBullets;
-
-            // Particles
             let newParts = [];
             for (let i = 0; i < particles.length; i++) {
                 let p = particles[i];
                 p.x += p.vx; p.y += p.vy; p.life--;
                 if (p.type === "blood") p.vy += 0.18;
-
                 let alpha = Math.max(0, p.life / p.maxLife);
                 ctx.globalAlpha = alpha;
-
-                if (p.type === "score") { ctx.fillStyle = "#f1c40f"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("+5", p.x, p.y) }
-                else if (p.type === "killtext") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.fillText("☠ KILL +20", p.x, p.y) }
-                else if (p.type === "dmgtext") { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("-" + BULLET_DMG, p.x, p.y) }
-                else if (p.type === "headshot") { ctx.fillStyle = "#ffaa00"; ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.fillText("HEADSHOT!", p.x, p.y) }
-                else if (p.type === "heal") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("+20 HP", p.x, p.y) }
-                else if (p.type === "dash") {
-                    ctx.fillStyle = "#ffffff";
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = "#3498db";
-                    ctx.font = "bold 12px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillText("💨", p.x, p.y);
-                    ctx.shadowBlur = 0;
-                }
-                else { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.size * alpha), 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill() }
+                if (p.type === "score") { ctx.fillStyle = "#f1c40f"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("+5", p.x, p.y); }
+                else if (p.type === "killtext") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.fillText("☠ KILL +20", p.x, p.y); }
+                else if (p.type === "dmgtext") { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center"; ctx.fillText("-" + BULLET_DMG, p.x, p.y); }
+                else if (p.type === "headshot") { ctx.fillStyle = "#ffaa00"; ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.fillText("HEADSHOT!", p.x, p.y); }
+                else if (p.type === "heal") { ctx.fillStyle = "#2ecc71"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("+20 HP", p.x, p.y); }
+                else if (p.type === "dash") { ctx.fillStyle = "#ffffff"; ctx.shadowBlur = 10; ctx.shadowColor = "#3498db"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText("💨", p.x, p.y); ctx.shadowBlur = 0; }
+                else { ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.size * alpha), 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill(); }
                 ctx.globalAlpha = 1;
-
                 if (p.life > 0) newParts.push(p);
             }
             particles = newParts;
-
             ctx.restore();
-
-            // Visual Effects
-            if (hitFlash > 0) {
-                ctx.fillStyle = `rgba(255, 0, 0, ${hitFlash / 15})`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                hitFlash--;
-            }
-
+            if (hitFlash > 0) { ctx.fillStyle = `rgba(255, 0, 0, ${hitFlash / 15})`; ctx.fillRect(0, 0, canvas.width, canvas.height); hitFlash--; }
             if (hitMarker > 0) {
                 let cx = canvas.width / 2, cy = canvas.height / 2;
                 let alpha = hitMarker / 8;
                 ctx.beginPath();
-                ctx.moveTo(cx - 15, cy - 15);
-                ctx.lineTo(cx - 8, cy - 8);
-                ctx.moveTo(cx + 15, cy - 15);
-                ctx.lineTo(cx + 8, cy - 8);
-                ctx.moveTo(cx - 15, cy + 15);
-                ctx.lineTo(cx - 8, cy + 8);
-                ctx.moveTo(cx + 15, cy + 15);
-                ctx.lineTo(cx + 8, cy + 8);
-                ctx.strokeStyle = `rgba(255, 50, 50, ${alpha})`;
-                ctx.lineWidth = 3;
-                ctx.stroke();
+                ctx.moveTo(cx - 15, cy - 15); ctx.lineTo(cx - 8, cy - 8);
+                ctx.moveTo(cx + 15, cy - 15); ctx.lineTo(cx + 8, cy - 8);
+                ctx.moveTo(cx - 15, cy + 15); ctx.lineTo(cx - 8, cy + 8);
+                ctx.moveTo(cx + 15, cy + 15); ctx.lineTo(cx + 8, cy + 8);
+                ctx.strokeStyle = `rgba(255, 50, 50, ${alpha})`; ctx.lineWidth = 3; ctx.stroke();
                 hitMarker--;
             }
-
-            trailParticles.forEach((t) => {
-                ctx.globalAlpha = t.life / 15;
-                ctx.beginPath();
-                ctx.arc(t.x, t.y, 5, 0, Math.PI * 2);
-                ctx.fillStyle = t.color + "88";
-                ctx.fill();
-                t.life--;
-                ctx.globalAlpha = 1;
-            });
+            trailParticles.forEach((t) => { ctx.globalAlpha = t.life / 12; ctx.beginPath(); ctx.arc(t.x, t.y, 4, 0, Math.PI * 2); ctx.fillStyle = t.color + "88"; ctx.fill(); t.life--; ctx.globalAlpha = 1; });
             trailParticles = trailParticles.filter(t => t.life > 0);
-
             streakEffects.forEach((s) => {
                 ctx.globalAlpha = s.life / 40;
                 ctx.font = `bold ${Math.floor(16 + (40 - s.life) / 4)}px Arial`;
-                ctx.textAlign = "center";
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = "#f1c40f";
-                ctx.fillStyle = s.color;
-                ctx.fillText(s.text, s.x, s.y - (40 - s.life));
-                s.life--;
-                ctx.globalAlpha = 1;
-                ctx.shadowBlur = 0;
+                ctx.textAlign = "center"; ctx.shadowBlur = 8; ctx.shadowColor = "#f1c40f";
+                ctx.fillStyle = s.color; ctx.fillText(s.text, s.x, s.y - (40 - s.life));
+                s.life--; ctx.globalAlpha = 1; ctx.shadowBlur = 0;
             });
             streakEffects = streakEffects.filter(s => s.life > 0);
-
-            // HUD
             ctx.fillStyle = "rgba(0,0,10,0.8)"; ctx.fillRect(0, 0, canvas.width, 52);
             ctx.fillStyle = "rgba(241,196,15,0.25)"; ctx.fillRect(0, 51, canvas.width, 1);
-
             let mins = Math.floor(gameTimer / 60), secs = gameTimer % 60;
             let tStr = mins + ":" + (secs < 10 ? "0" : "") + secs;
             let isLow = gameTimer <= 30;
             ctx.font = "bold 26px Arial"; ctx.textAlign = "center";
             ctx.fillStyle = isLow ? (frame % 20 < 10 ? "#ff4444" : "#e74c3c") : "#f1c40f";
             ctx.fillText("⏱ " + tStr, canvas.width / 2, 38);
-
             if (myP) {
                 ctx.textAlign = "left"; ctx.font = "bold 13px Arial";
                 ctx.fillStyle = "#fff"; ctx.fillText("Score:", 12, 20);
@@ -1531,8 +1425,7 @@ ${p.id === myId ? "(you)" : ""}
                 ctx.fillStyle = "#fff"; ctx.fillText("Kills:", 12, 38);
                 ctx.fillStyle = "#2ecc71"; ctx.fillText(myP.kills, 62, 38);
                 ctx.font = "13px Arial";
-                for (let i = 0; i < MAX_LIVES; i++) { ctx.fillText(i < myP.lives ? "❤️" : "🖤", 130 + i * 18, 22) }
-
+                for (let i = 0; i < MAX_LIVES; i++) ctx.fillText(i < myP.lives ? "❤️" : "🖤", 130 + i * 18, 22);
                 let hx = 128, hy = 28, hw = 110, hh = 14;
                 ctx.fillStyle = "rgba(255,255,255,0.1)";
                 ctx.beginPath(); ctx.roundRect(hx, hy, hw, hh, 4); ctx.fill();
@@ -1544,93 +1437,61 @@ ${p.id === myId ? "(you)" : ""}
                 ctx.fillStyle = "white"; ctx.font = "bold 9px Arial"; ctx.textAlign = "center";
                 ctx.fillText(myP.hp + "/" + MAX_HP, hx + hw / 2, hy + 11);
             }
-
             let sorted = Object.values(players).sort((a, b) => b.score - a.score);
             let medals = ["🥇", "🥈", "🥉", "4️⃣"];
             ctx.textAlign = "right"; ctx.font = "bold 12px Arial";
-            sorted.slice(0, 4).forEach((p, i) => {
-                ctx.fillStyle = p.id === myId ? "#f1c40f" : p.color;
-                ctx.fillText(medals[i] + " " + p.name + ": " + p.score, canvas.width - 12, 16 + i * 16);
-            });
-
+            sorted.slice(0, 4).forEach((p, i) => { ctx.fillStyle = p.id === myId ? "#f1c40f" : p.color; ctx.fillText(medals[i] + " " + p.name + ": " + p.score, canvas.width - 12, 16 + i * 16); });
             let feedY = 60;
             killFeed.forEach((kf, i) => {
                 if (kf.t > 0) {
                     kf.t--;
                     ctx.globalAlpha = Math.min(1, kf.t / 20);
                     ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
-                    if (kf.isChat) {
-                        ctx.fillStyle = kf.c || "#fff";
-                        ctx.fillText(kf.k + ": " + kf.v, canvas.width / 2, feedY + i * 16);
-                    } else {
-                        ctx.fillStyle = kf.c || "#e74c3c";
-                        ctx.fillText("☠ " + kf.k + " → " + kf.v, canvas.width / 2, feedY + i * 16);
-                    }
+                    if (kf.isChat) { ctx.fillStyle = kf.c || "#fff"; ctx.fillText(kf.k + ": " + kf.v, canvas.width / 2, feedY + i * 16); }
+                    else { ctx.fillStyle = kf.c || "#e74c3c"; ctx.fillText("☠ " + kf.k + " → " + kf.v, canvas.width / 2, feedY + i * 16); }
                     ctx.globalAlpha = 1;
                 }
             });
             killFeed = killFeed.filter(kf => kf.t > 0);
-
             let pyInd = canvas.height - 12;
             ctx.textAlign = "left"; ctx.font = "bold 11px Arial";
-            if (speedUp > 0) { ctx.fillStyle = "#f39c12"; ctx.fillText("⚡ Speed " + (Math.ceil(speedUp / 60)) + "s", 12, pyInd); pyInd -= 18 }
-            if (shieldOn) { ctx.fillStyle = "#3498db"; ctx.fillText("🛡️ Shield " + (Math.ceil(shieldT / 60)) + "s", 12, pyInd); pyInd -= 18 }
-            if (dmgUp > 0) { ctx.fillStyle = "#9b59b6"; ctx.fillText("💥 2x DMG " + (Math.ceil(dmgUp / 60)) + "s", 12, pyInd) }
-            // Dash cooldown indicator
+            if (speedUp > 0) { ctx.fillStyle = "#f39c12"; ctx.fillText("⚡ Speed " + (Math.ceil(speedUp / 60)) + "s", 12, pyInd); pyInd -= 18; }
+            if (shieldOn) { ctx.fillStyle = "#3498db"; ctx.fillText("🛡️ Shield " + (Math.ceil(shieldT / 60)) + "s", 12, pyInd); pyInd -= 18; }
+            if (dmgUp > 0) { ctx.fillStyle = "#9b59b6"; ctx.fillText("💥 2x DMG " + (Math.ceil(dmgUp / 60)) + "s", 12, pyInd); }
             if (dashCooldown > 0) {
-                ctx.fillStyle = "rgba(52,152,219,0.3)";
-                ctx.fillRect(12, canvas.height - 42, 60, 8);
-                ctx.fillStyle = "#3498db";
-                ctx.fillRect(12, canvas.height - 42, 60 * (1 - dashCooldown / 60), 8);
-                ctx.fillStyle = "white";
-                ctx.font = "9px Arial";
-                ctx.fillText("⚡ DASH", 12, canvas.height - 45);
+                ctx.fillStyle = "rgba(52,152,219,0.3)"; ctx.fillRect(12, canvas.height - 42, 60, 8);
+                ctx.fillStyle = "#3498db"; ctx.fillRect(12, canvas.height - 42, 60 * (1 - dashCooldown / 60), 8);
+                ctx.fillStyle = "white"; ctx.font = "9px Arial"; ctx.fillText("⚡ DASH", 12, canvas.height - 45);
             }
             if (myP && !myP.alive) {
                 ctx.fillStyle = "rgba(0,0,0,0.6)";
                 ctx.beginPath(); ctx.roundRect(canvas.width / 2 - 120, canvas.height / 2 - 22, 240, 44, 10); ctx.fill();
                 ctx.fillStyle = "white"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
-                if (myP.lives > 0) { ctx.fillText("💀 Respawning... " + myP.lives + "❤️", canvas.width / 2, canvas.height / 2 + 6) }
-                else { ctx.fillStyle = "#e74c3c"; ctx.fillText("☠️ Spectating...", canvas.width / 2, canvas.height / 2 + 6) }
+                if (myP.lives > 0) ctx.fillText("💀 Respawning... " + myP.lives + "❤️", canvas.width / 2, canvas.height / 2 + 6);
+                else ctx.fillText("☠️ Spectating...", canvas.width / 2, canvas.height / 2 + 6);
             }
-
             ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.font = "10px Arial"; ctx.textAlign = "center";
-            ctx.fillText("WASD=Move | Click=Shoot | SPACE=Dash | T=Chat | 1-6=Emotes", canvas.width / 2, canvas.height - 6);
-
+            ctx.fillText("WASD=Move | Click=Shoot | SPACE=Dash | T=Chat | 1-6=Emotes | 🎨 Customize", canvas.width / 2, canvas.height - 6);
             requestAnimationFrame(gameLoop);
         }
 
         // =================== SHOOTING ===================
         canvas.addEventListener("click", e => {
             if (!myP || !myP.alive || !gameOn || shootCD > 0) return;
-
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
             let angle = Math.atan2(e.clientY - myP.y, e.clientX - myP.x);
             let dmg = dmgUp > 0 ? 40 : BULLET_DMG;
-
             let b = {
-                x: myP.x + Math.cos(angle) * 26,
-                y: myP.y + Math.sin(angle) * 26,
-                vx: Math.cos(angle) * BULLET_SPD,
-                vy: Math.sin(angle) * BULLET_SPD,
-                oid: myId, oname: myName, ocolor: myP.color,
-                color: myP.color, dmg, life: 55
+                x: myP.x + Math.cos(angle) * 26, y: myP.y + Math.sin(angle) * 26,
+                vx: Math.cos(angle) * BULLET_SPD, vy: Math.sin(angle) * BULLET_SPD,
+                oid: myId, oname: myName, ocolor: myP.color, color: bulletColors[playerSkin.bulletColor], dmg, life: 55
             };
-
-            if (bullets.length < MAX_BULLETS) {
-                bullets.push(b);
-                send({ type: "bullet", ...b });
-            }
-
+            if (bullets.length < MAX_BULLETS) { bullets.push(b); send({ type: "bullet", ...b }); }
             playShoot();
-
-            let n = Math.min(3, MAX_PARTS - particles.length);
+            let n = Math.min(2, MAX_PARTS - particles.length);
             for (let i = 0; i < n; i++) {
                 let a = angle + (Math.random() - 0.5) * 0.6;
-                addPart(b.x, b.y, Math.cos(a) * 4, Math.sin(a) * 4, "#f1c40f", 2.5, 8, "dot");
+                addPart(b.x, b.y, Math.cos(a) * 4, Math.sin(a) * 4, bulletColors[playerSkin.bulletColor], 2.5, 8, "dot");
             }
             shootCD = 10;
         });
@@ -1644,26 +1505,13 @@ ${p.id === myId ? "(you)" : ""}
             }
         }, 100);
 
-        canvas.addEventListener("mousemove", e => {
-            mx = e.clientX; my2 = e.clientY;
-            if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
-        });
-
-        canvas.addEventListener("touchmove", e => {
-            e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY;
-            if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x);
-        }, { passive: false });
-        canvas.addEventListener("touchstart", e => {
-            e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY;
-            if (myP && myP.alive && gameOn && shootCD <= 0) {
-                canvas.dispatchEvent(new MouseEvent("click", { clientX: mx, clientY: my2, bubbles: true }));
-            }
-        }, { passive: false });
+        canvas.addEventListener("mousemove", e => { mx = e.clientX; my2 = e.clientY; if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x); });
+        canvas.addEventListener("touchmove", e => { e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY; if (myP) myP.angle = Math.atan2(my2 - myP.y, mx - myP.x); }, { passive: false });
+        canvas.addEventListener("touchstart", e => { e.preventDefault(); let t = e.touches[0]; mx = t.clientX; my2 = t.clientY; if (myP && myP.alive && gameOn && shootCD <= 0) { canvas.dispatchEvent(new MouseEvent("click", { clientX: mx, clientY: my2, bubbles: true })); } }, { passive: false });
 
         window.addEventListener("keydown", e => {
             keys[e.key] = true;
-            if (e.key === "t" || e.key === "T") { if (gameOn) sendChat(); }
-
+            if (e.key === "t" || e.key === "T") if (gameOn) sendChat();
             if (e.key >= '1' && e.key <= '6' && gameOn && myP && myP.alive && emoteCooldown <= 0) {
                 let emote = emotes[parseInt(e.key) - 1];
                 send({ type: "emote", id: myId, emote: emote, name: myName, color: myP.color });
@@ -1671,16 +1519,15 @@ ${p.id === myId ? "(you)" : ""}
                 sysChat(`${myName}: ${emote}`);
             }
             if (emoteCooldown > 0) emoteCooldown--;
-            // DASH/JUMP on Space bar
             if (e.key === " " || e.key === "Space" || e.key === "Spacebar") {
                 e.preventDefault();
                 if (myP && myP.alive && gameOn && dashCooldown <= 0) {
-                    let dashSpeed = 12;
+                    let dashSpeed = 11;
                     myP.vx += Math.cos(myP.angle) * dashSpeed;
                     myP.vy += Math.sin(myP.angle) * dashSpeed;
-                    dashCooldown = 60; // 1 second cooldown (60 frames)
+                    dashCooldown = 60;
                     addPart(myP.x, myP.y, 0, 0, "#ffffff", 8, 10, "dash");
-                    playShoot(); // reuse shoot sound for dash
+                    playShoot();
                     sysChat("💨 DASH!");
                 }
             }
@@ -1691,64 +1538,31 @@ ${p.id === myId ? "(you)" : ""}
         // =================== END GAME ===================
         function endGame(scores) {
             playGameEnd();
-
-            let matchRecord = {
-                timestamp: Date.now(),
-                winner: scores[0]?.name || "Nobody",
-                myScore: myP?.score || 0,
-                myKills: myP?.kills || 0,
-                myDeaths: myP?.deaths || 0,
-                playerStats: {}
-            };
+            let matchRecord = { timestamp: Date.now(), winner: scores[0]?.name || "Nobody", myScore: myP?.score || 0, myKills: myP?.kills || 0, myDeaths: myP?.deaths || 0, playerStats: {} };
             scores.forEach(s => { matchRecord.playerStats[s.name] = { score: s.score, kills: s.kills }; });
             matchHistory.unshift(matchRecord);
             if (matchHistory.length > 3) matchHistory.pop();
             localStorage.setItem("matchHistory", JSON.stringify(matchHistory));
             localStorage.setItem("badges", JSON.stringify(badges));
-
             gameOn = false;
             if (timerInt) clearInterval(timerInt);
-
             document.getElementById("ui").style.display = "flex";
             document.getElementById("lobbyBox").style.display = "none";
             document.getElementById("menuBox").style.display = "none";
             document.getElementById("winBox").style.display = "block";
-
-            if (!scores) {
-                scores = Object.values(players).map(p => ({
-                    name: p.name, score: p.score, kills: p.kills,
-                    deaths: p.deaths || 0, color: p.color
-                }));
-            }
+            if (!scores) scores = Object.values(players).map(p => ({ name: p.name, score: p.score, kills: p.kills, deaths: p.deaths || 0, color: p.color }));
             scores.sort((a, b) => b.score - a.score);
-
             let winner = scores[0] || { name: "Nobody", score: 0, color: "#fff" };
             let isMe = winner.name === myName;
-
             document.getElementById("winTitle").textContent = isMe ? "🏆 YOU WIN!" : "🏆 Game Over!";
             document.getElementById("winTitle").style.color = isMe ? "#f1c40f" : "#e74c3c";
             document.getElementById("winName").textContent = "👑 " + winner.name + " — " + winner.score + " pts!";
             document.getElementById("winName").style.color = winner.color;
-
             let html = "";
             let m = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣"];
             scores.forEach((s, i) => {
                 let isMine = s.name === myName;
-                html += `<div style="display:flex;justify-content:space-between;align-items:center;
-padding:9px 12px;margin-bottom:5px;border-radius:8px;
-background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};
-border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};
-color:white;font-size:13px">
-<div>
-<span style="font-size:15px">${m[i] || "•"}</span>
-<span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>
-${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
-</div>
-<div style="text-align:right">
-<div style="color:#f1c40f;font-weight:bold">${s.score} pts</div>
-<div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div>
-</div>
-</div>`;
+                html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;margin-bottom:5px;border-radius:8px;background:${isMine ? "rgba(241,196,15,0.12)" : "rgba(255,255,255,0.04)"};border:1px solid ${isMine ? "rgba(241,196,15,0.3)" : "rgba(255,255,255,0.07)"};color:white;font-size:13px"><div><span style="font-size:15px">${m[i] || "•"}</span><span style="color:${s.color};font-weight:bold;margin-left:6px">${s.name}</span>${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}</div><div style="text-align:right"><div style="color:#f1c40f;font-weight:bold">${s.score} pts</div><div style="color:#aaa;font-size:10px">${s.kills}K / ${s.deaths}D</div></div></div>`;
             });
             document.getElementById("finalList").innerHTML = html;
         }
@@ -1758,21 +1572,14 @@ ${isMine ? "<span style='color:#f1c40f;font-size:10px'> YOU</span>" : ""}
             document.getElementById("lobbyBox").style.display = "block";
             bullets = []; particles = []; items = []; killFeed = [];
             gameTimer = GAME_TIME; shootCD = 0;
-            Object.values(players).forEach(p => {
-                p.score = 0; p.kills = 0; p.deaths = 0;
-                p.hp = MAX_HP; p.lives = MAX_LIVES; p.alive = true;
-            });
-            if (isHost) {
-                document.getElementById("startBtn").style.display = "block";
-                document.getElementById("waitBtn").style.display = "none";
-            } else {
-                document.getElementById("startBtn").style.display = "none";
-                document.getElementById("waitBtn").style.display = "block";
-            }
+            Object.values(players).forEach(p => { p.score = 0; p.kills = 0; p.deaths = 0; p.hp = MAX_HP; p.lives = MAX_LIVES; p.alive = true; });
+            if (isHost) { document.getElementById("startBtn").style.display = "block"; document.getElementById("waitBtn").style.display = "none"; }
+            else { document.getElementById("startBtn").style.display = "none"; document.getElementById("waitBtn").style.display = "block"; }
             refreshLobby();
         }
 
         initAudio();
+        updateSkinPreview();
     </script>
 </body>
 
